@@ -12,6 +12,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	private Node root;
 	private Comparator<? super K> comparator;
 	private int g;
+	private V previousValue;
 	
 	// If this generic wildcard confuses you, reread the end of the
 	// part 1 spec for the introduction to generics.
@@ -52,32 +53,36 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	@Override
 	public V put(K key, V value) {
-		insert(key, value, root);
-		return null;
+		root = insert(key, value, root);
+		return previousValue;
 	}
 	
 	private Node insert(K key, V value, Node root) {
 		int balanceFactor;
 		if (root == null)
 			root = new Node(key, value);
-		else if (comparator.compare(root.key, key) == 0)
+		else if (comparator.compare(root.key, key) == 0){
+			previousValue = root.value;
 			root.value = value;
+		}
 		else {
-			if (comparator.compare(root.key, key) < 0)
+			System.out.println(comparator.compare(root.key, key));
+			if (comparator.compare(root.key, key) > 0)
 				root.left = insert(key, value, root.left);
-			else if (comparator.compare(root.key, key) > 0)
+			else if (comparator.compare(root.key, key) < 0)
 				root.right = insert(key, value, root.right);
+			
 			
 			balanceFactor = height(root.left) - height(root.right);
 			
 			if(balanceFactor > g){
-				if(comparator.compare(root.key, root.left.key) < 0)
+				if(comparator.compare(key, root.left.key) > 0)
 					root = rotateRight(root);
 				else
 					root = rotateLeftRight(root);
 			}
-			else if (balanceFactor < g){
-				if(comparator.compare(root.key, root.right.key) > 0)
+			else if (balanceFactor < -g){
+				if(comparator.compare(key, root.right.key) < 0)
 					root = rotateLeft(root);
 				else
 					root = rotateRightLeft(root);
@@ -200,7 +205,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	public class Node {
 		private K key;
 		private V value;
-		private V previousValue;
         private Node left;
         private Node right;
         private int height;
@@ -212,20 +216,10 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		public Node(K key, V value, Node left, Node right){
 			this.key = key;
 			this.value = value;
-			this.previousValue = null;
 			this.left = left;
 			this.right = right;
 			this.height = 0;
-		}
-		
-		public void setPreviousValue(){
-			this.previousValue = value;
-		}
-	
-		public V getPreviousValue(){
-			return previousValue;
-		}
-	
+		}	
 	}
 	
 }
