@@ -1,0 +1,11 @@
+# Submit server .submit file for
+#  Course cmsc420
+#  Project part2: MeeshQuest
+
+courseName=cmsc420
+semester=201308
+projectNumber=part2
+courseKey=0da1670f52eb0ffe
+authentication.type=ldap
+baseURL=https://submit.cs.umd.edu:443
+submitURL=https://submit.cs.umd.edu:443/eclipse/SubmitProjectViaEclipse
