@@ -61,14 +61,17 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		int balanceFactor;
 		if (root == null)
 			root = new Node(key, value);
+		
+		// If key is equal to root.key
 		else if (comparator.compare(root.key, key) == 0){
 			previousValue = root.value;
 			root.value = value;
 		}
 		else {
-			System.out.println(comparator.compare(root.key, key));
+			// If key is lesser than root.key
 			if (comparator.compare(root.key, key) > 0)
 				root.left = insert(key, value, root.left);
+			// If key is greater than root.key
 			else if (comparator.compare(root.key, key) < 0)
 				root.right = insert(key, value, root.right);
 			
@@ -76,16 +79,22 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 			balanceFactor = height(root.left) - height(root.right);
 			
 			if(balanceFactor > g){
-				if(comparator.compare(key, root.left.key) > 0)
-					root = rotateRight(root);
-				else
-					root = rotateLeftRight(root);
+				System.out.println("Weighted left");
+				
+				if(comparator.compare(key, root.left.key) < 0) {
+					System.out.println("rotate right");
+				} else {
+					System.out.println("rotate leftRight");
+				}
 			}
 			else if (balanceFactor < -g){
-				if(comparator.compare(key, root.right.key) < 0)
+				System.out.println("Weighted right");
+				if(comparator.compare(key, root.right.key) > 0) {
+					System.out.println("rotate left");
 					root = rotateLeft(root);
-				else
-					root = rotateRightLeft(root);
+				} else {
+					System.out.println("rotate rightleft");
+				}
 			}
 		}
 		root.height = max(height(root.left), height(root.right)) + 1;
@@ -208,6 +217,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
         private Node left;
         private Node right;
         private int height;
+		private StringBuffer tab;
 		
 		public Node(K key,V value){
 			this(key, value, null, null);
@@ -220,6 +230,30 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 			this.right = right;
 			this.height = 0;
 		}	
+		
+		public String toString(){
+			return String.format("Node<%s, %s>", this.key, this.value);
+		}
+	}
+	
+	
+	public String toString(){
+		return toString(root, 1);
+	}
+	StringBuffer tab = new StringBuffer();
+	String left = "left", right = "right", root_dir = "root_dir";
+	public String toString(Node root, int level){
+		if (root == null)
+			return "";
+		else {
+			tab.setLength(0);
+			for (int i = 1; i < level; i++)
+				tab.append("\t");
+
+			return tab.toString() + root.toString() + "\n" + toString(root.left, level + 1) + toString(root.right, level + 1);
+		}
+		
+			
 	}
 	
 }
