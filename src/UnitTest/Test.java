@@ -27,7 +27,7 @@ public class Test extends TestCase {
     }
 
 	public void testStressAVLG(){
-		
+		System.out.println(avlg.toString());
 	}
 	
 	public void testFirstKey(){
