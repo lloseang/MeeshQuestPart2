@@ -6,7 +6,6 @@ import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
@@ -38,7 +37,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		root = null;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public boolean containsKey(Object key) {
 		if (key == null)
@@ -69,13 +67,15 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	@Override
 	public V put(K key, V value) {
-		root = insert(key, value, root);
+		if(root == null)
+			root = insert(key, value, root, null);
+		else
+			root = insert(key, value, root, root.parent);
 		return previousValue;
 	}
 	
 	@Override
 	public void putAll(Map<? extends K, ? extends V> m) {
-		// TODO Auto-generated method stub	
 		
 	}
 
@@ -101,7 +101,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		if (root == null)
 			throw new NoSuchElementException();
 		else
-			return firstKey(root);
+			return root.getFirstEntry().getKey();
 	}
 
 	@Override
@@ -109,40 +109,34 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		if (root == null)
 			throw new NoSuchElementException();
 		else
-			return lastKey(root);
+			return root.getLastEntry().getKey();
 	}
 
 	@Override
 	public SortedMap<K, V> headMap(K toKey) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Set<K> keySet() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public SortedMap<K, V> subMap(K fromKey, K toKey) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public SortedMap<K, V> tailMap(K fromKey) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Collection<V> values() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public String toString(){
 		return toString(root, 1);
@@ -158,15 +152,37 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		return new EntrySet();
 	}
 
-	@SuppressWarnings("unchecked")
+	/* Returns the map's entry for the given Key, or null if 
+	 * the map does not contain an entry for the key*/
+	final Node<K,V> getEntry(K key){
+		if(key == null)
+			throw new NullPointerException();
+		Node<K,V> p = root;
+		while(p != null) {
+			int cmp = comparator.compare(key, p.getKey());
+			
+			if(cmp < 0)
+				p = p.left;
+			else if (cmp > 0)
+				p = p.right;
+			else
+				return p;
+		}
+		return null;
+	}
+	
+	final static  boolean valEquals(Object o1, Object o2){
+		return (o1 == null ? o2 == null :  o1.equals(o2));
+	}
+	
 	private boolean containsKey(K key, Node<K,V> root) {
 		if(root == null)
 			return false;
 		
-		if(comparator.compare(key, root.key) < 0){
+		if(comparator.compare(key, root.getKey()) < 0){
 			return containsKey(key, root.left);
 		}
-		else if (comparator.compare(key, root.key) > 0){
+		else if (comparator.compare(key, root.getKey()) > 0){
 			return containsKey(key, root.right);
 		}
 		else
@@ -176,58 +192,55 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	private boolean containsValue(V value, Node<K,V> root) {
 		if(root == null)
 			return false;
-		
-		if(root.value.equals(value))
+		if(root.getValue().equals(value))
 			return true;
 		
 		return containsValue(value, root.left) || containsValue(value, root.right);
 	}
 
-	@SuppressWarnings("unchecked")
 	private V get(Node<K,V> root, K key){
 		if(root == null)
 			return null;
-		if(comparator.compare(key, root.key) < 0){
+		if(comparator.compare(key, root.getKey()) < 0){
 			return get(root.left, key);
 		} 
-		else if(comparator.compare(key, root.key) > 0){
+		else if(comparator.compare(key, root.getKey()) > 0){
 			return get(root.right, key);
 		} else {
-			return root.value;
+			return root.getValue();
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	private Node<K,V> insert(K key, V value, Node<K,V> root) {
+	private Node<K,V> insert(K key, V value, Node<K,V> root, Node<K,V> parent) {
 		int balanceFactor;
 		if (root == null)
-			root = new Node<K,V>(key, value);
+			root = new Node<K, V>(key, value, parent);
 		
-		// If key is equal to root.key
-		else if (comparator.compare(root.key, key) == 0){
-			previousValue = root.value;
-			root.value = value;
+		// If key is equal to root.getKey()
+		else if (comparator.compare(root.getKey(), key) == 0){
+			previousValue = root.getValue();
+			root.setValue(value);
 		}
 		else {
-			// If key is lesser than root.key
-			if (comparator.compare(root.key, key) > 0)
-				root.left = insert(key, value, root.left);
-			// If key is greater than root.key
-			else if (comparator.compare(root.key, key) < 0)
-				root.right = insert(key, value, root.right);
+			// If key is lesser than root.getKey()
+			if (comparator.compare(root.getKey(), key) > 0)
+				root.left = insert(key, value, root.left, root);
+			// If key is greater than root.getKey()
+			else if (comparator.compare(root.getKey(), key) < 0)
+				root.right = insert(key, value, root.right, root);
 			
 			
 			balanceFactor = height(root.left) - height(root.right);
 			
 			if(balanceFactor > g){
-				if(comparator.compare(key, (K) root.left.key) < 0) {
+				if(comparator.compare(key, (K) root.left.getKey()) < 0) {
 					root = rotateRight(root);
 				} else {
 					root = rotateLeftRight(root);
 				}
 			}
 			else if (balanceFactor < -g){
-				if(comparator.compare(key, (K) root.right.key) > 0) {
+				if(comparator.compare(key, (K) root.right.getKey()) > 0) {
 					root = rotateLeft(root);
 				} else {
 					root = rotateRightLeft(root);
@@ -238,20 +251,24 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		return root;
 	}
 
-	@SuppressWarnings("unchecked")
 	private Node<K,V> rotateRightLeft(Node<K,V> root) {
 	    root.right = rotateRight( root.right );
         return rotateLeft(root);
 	}
 
-	@SuppressWarnings("unchecked")
 	private Node<K,V> rotateRight(Node<K,V> root) {
         Node<K,V> temp = root.left;
+        temp.parent = root.parent;
         root.left = temp.right;
         temp.right = root;
         
         root.height = max( height( root.left ), height( root.right ) ) + 1;
         temp.height = max( height( temp.left ), root.height ) + 1;
+        
+        if(temp.left != null)
+        	temp.left.parent = temp;
+        
+        temp.right.parent = temp;
         return temp;
 	}
 
@@ -262,11 +279,17 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	private Node<K,V> rotateLeft(Node<K,V> root) {
 		Node<K,V> temp = root.right;
+		temp.parent = root.parent;
 	    root.right = temp.left;
 	    temp.left = root;
 	      
 	    root.height = max( height( root.left ), height( root.right ) ) + 1;
 	    temp.height = max( height( temp.right ), root.height ) + 1;
+	    
+	    if(temp.right != null)
+	    	temp.right.parent = temp;
+	    
+	    temp.left.parent = temp;
 	    return temp;
 	}
 
@@ -285,20 +308,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 			return 1 + size(root.left) + size(root.right);
 	}
 
-	private K lastKey(Node<K,V> root) {
-		if (root.right != null)
-			return lastKey(root.right);
-		else
-			return root.key;
-	}
-
-	private K firstKey(Node<K,V> root) {
-		if(root.left != null)
-			return firstKey(root.left);
-		else
-			return root.key;	
-	}
-	
 	StringBuffer tab = new StringBuffer();
 	public String toString(Node<K,V> root, int level){
 		if (root == null)
@@ -312,111 +321,27 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		}
 	}
 
-	public class Node<K,V> {
-		private K key;
-		private V value;
-        private Node<K,V> left;
-        private Node<K,V> right;
-        private int height;
-		
-		public Node(K key,V value){
-			this(key, value, null, null);
-		}
-		
-		public Node(K key, V value, Node<K,V> left, Node<K,V> right){
-			this.key = key;
-			this.value = value;
-			this.left = left;
-			this.right = right;
-			this.height = 0;
-		}	
-		
-		@Override
-		public String toString(){
-			return String.format("Node<%s, %s>", this.key, this.value);
-		}
-	}
-
-	protected class EntrySet implements Set<Map.Entry<K, V>> {
-
-		@Override
-		public boolean add(java.util.Map.Entry<K, V> e) {
-			if(e == null)
-				throw new NullPointerException();
-			if(!(e instanceof Map.Entry))
-				throw new ClassCastException();
-			if(this.contains(e))
-				return false;
-			
-			try {
-				AvlGTree.this.put(e.getKey(), e.getValue());
-				return true;
-			} catch (Exception exception){
-				throw new IllegalArgumentException();
-			}
-		}
-
-		@Override
-		public boolean addAll(Collection<? extends java.util.Map.Entry<K, V>> c) {
-			for(Map.Entry<K,V> entry : c){
-				if(!add(entry))
-					return false;
-			}
-			return true;
-		}
+	protected class EntrySet extends AbstractSet<Map.Entry<K, V>> {
 
 		@Override
 		public void clear() {
 			AvlGTree.this.clear();
 		}
-
-		@SuppressWarnings("unchecked")
+		
 		@Override
 		public boolean contains(Object o) {
 			if (!(o instanceof Map.Entry))
 				throw new ClassCastException();
 			
 			Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
-			if(AvlGTree.this.containsKey(entry.getKey())){
-				return AvlGTree.this.get(entry.getKey()).equals(entry.getValue());
-			}
-			return false;
-		}
-
-		@Override
-		public boolean containsAll(Collection<?> c) {
-			for (Object obj : c){
-				if(!(obj instanceof Map.Entry))
-					throw new ClassCastException();
-				if(!contains(obj))
-					return false;
-			}
-			return true;
-		}
-
-		@Override
-		public boolean isEmpty() {
-			return AvlGTree.this.isEmpty();
-		}
-
-		@Override
-		public Iterator<java.util.Map.Entry<K, V>> iterator() {
-			// TODO Auto-generated method stub
-			return null;
+		
+			V value = entry.getValue();
+			Node<K,V> p = getEntry(entry.getKey());
+			return p != null && valEquals(p.getValue(), value);
 		}
 
 		@Override
 		public boolean remove(Object o) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public boolean removeAll(Collection<?> c) {
-			throw new UnsupportedOperationException();
-		}
-		
-		@Override
-		public boolean retainAll(Collection<?> c) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -426,25 +351,35 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		}
 
 		@Override
-		public Object[] toArray() {
-			// TODO Auto-generated method stub
-			return null;
+		public Iterator<java.util.Map.Entry<K, V>> iterator() {
+			return new EntryIterator(root.getFirstEntry());
+		}
+	}
+	
+	final class EntryIterator extends PrivateEntryIterator<Map.Entry<K,V>>{
+		
+		EntryIterator(Node<K, V> first) {
+			super(first);
 		}
 
 		@Override
-		public <T> T[] toArray(T[] a) {
-			// TODO Auto-generated method stub
-			return null;
+		public java.util.Map.Entry<K, V> next() {
+			return nextEntry();
 		}
-	
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+		
 	}
 	
 	public abstract class PrivateEntryIterator<T> implements Iterator<T>{
-		Entry<K,V> next;
-		Entry<K,V> lastReturned;
+		Node<K,V> next;
+		Node<K,V> lastReturned;
 		int expectedModCount;
 		
-		PrivateEntryIterator(Entry<K,V> first){
+		PrivateEntryIterator(Node<K,V> first){
 			expectedModCount = modCount;
 			lastReturned = null;
 			next = first;
@@ -455,15 +390,35 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 			return next != null;
 		}
 
-		/*
-		final Entry<K,V> nextEntry(){
-			Entry<K,V> e = next;
+		final Node<K,V> nextEntry(){
+			Node<K,V> e = next;
 			if (e == null)
 				throw new NoSuchElementException();
 			if (modCount != expectedModCount)
 				throw new ConcurrentModificationException();
 			next = successor(e);
+			lastReturned = e;
+			return e;
 		}		
-		*/
+		
+	}
+
+	public Node<K, V> successor(Node<K, V> e) {
+		if(e == null)
+			return null;
+		else if (e.right != null){
+			Node<K,V> parent = e.right;
+			while(parent.left != null)
+				parent = parent.left;
+			return parent;
+		} else {
+			Node<K,V> parent = e.parent;
+			Node<K,V> child = e;
+			while(parent != null && child == parent.right){
+				child = parent;
+				parent = parent.parent;
+			}
+			return parent;
+		}
 	}
 }
