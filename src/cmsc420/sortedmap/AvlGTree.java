@@ -1,12 +1,15 @@
 package cmsc420.sortedmap;
 
 import java.util.AbstractCollection;
+import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
@@ -57,6 +60,8 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	
 	@Override
 	public V get(Object key) {
+		if(key == null)
+			throw new NullPointerException();
 		if(root == null)
 			return null;
 		return get(root, (K) key);
@@ -78,7 +83,14 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	
 	@Override
 	public void putAll(Map<? extends K, ? extends V> m) {
-		Iterator iter = m.entrySet().iterator();
+		if(m == null)
+			throw new NullPointerException();
+			
+		for(java.util.Map.Entry<? extends K, ? extends V> e: m.entrySet()){
+			if(!(e instanceof Node<?,?>))
+				throw new ClassCastException();
+			this.put(e.getKey(), e.getValue());
+		}
 	}
 
 	@Override
@@ -117,16 +129,28 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	@Override
 	public SortedMap<K, V> headMap(K toKey) {
+		return headMap(toKey, false);
+	}
+
+	private NavigableMap<K, V> headMap(K toKey, boolean inclusive) {
 		return null;
 	}
 
 	@Override
 	public SortedMap<K, V> subMap(K fromKey, K toKey) {
+		return subMap(fromKey, true, toKey, false);
+	}
+
+	private NavigableMap<K, V> subMap(K fromKey, boolean b, K toKey, boolean c) {
 		return null;
 	}
 
 	@Override
 	public SortedMap<K, V> tailMap(K fromKey) {
+		return tailMap(fromKey, true);
+	}
+
+	private NavigableMap<K, V> tailMap(K fromKey, boolean b) {
 		return null;
 	}
 
@@ -137,7 +161,36 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	@Override
 	public boolean equals(Object o){
-		return false;
+		if(o == this)
+			return true;
+		
+		if(!(o instanceof AvlGTree))
+			return false;
+		
+		Map<K,V> map = (Map<K,V>) o;
+		
+		if(map.size() != this.size())
+			return false;
+		
+		try {
+			Iterator<Entry<K, V>> iter = this.entrySet().iterator();
+			while(iter.hasNext()){
+				Entry<K,V> e = iter.next();
+				K key = e.getKey();
+				V value = e.getValue();
+				if(value == null) {
+					if(!(map.get(key) == null) && map.containsKey(key))
+						return false;
+				} else {
+					if (!value.equals(map.get(key)))
+						return false;
+				}
+			}
+		} catch (Exception e){
+			return false;
+		}
+		
+		return true;
 	}
 
 	@Override
