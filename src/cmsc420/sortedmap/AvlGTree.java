@@ -37,6 +37,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		this.root = null; 
 		this.comparator = comparator;
 		this.g = g;
+		this.previousValue = null;
 	}
 	
 	@Override
@@ -129,35 +130,28 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	@Override
 	public SortedMap<K, V> headMap(K toKey) {
-		return headMap(toKey, false);
-	}
-
-	private NavigableMap<K, V> headMap(K toKey, boolean inclusive) {
-		return null;
+		return new SubMap(null, toKey);
 	}
 
 	@Override
 	public SortedMap<K, V> subMap(K fromKey, K toKey) {
-		return subMap(fromKey, true, toKey, false);
-	}
-
-	private NavigableMap<K, V> subMap(K fromKey, boolean b, K toKey, boolean c) {
-		return null;
+		return new SubMap(fromKey, toKey);
 	}
 
 	@Override
 	public SortedMap<K, V> tailMap(K fromKey) {
-		return tailMap(fromKey, true);
+		return new SubMap(fromKey, null);
 	}
 
-	private NavigableMap<K, V> tailMap(K fromKey, boolean b) {
-		return null;
-		//Change change
-	}
 
 	@Override
 	public String toString(){
 		return toString(root, 1);
+	}
+	
+	final int compare(Object k1, Object k2){
+		return comparator == null ? ((Comparable<? super K>)k1).compareTo((K)k2)
+				: comparator.compare((K)k1, (K)k2);
 	}
 
 	@Override
@@ -168,7 +162,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		if(!(o instanceof AvlGTree))
 			return false;
 		
-		Map<K,V> map = (Map<K,V>) o;
+		AvlGTree<K,V> map = (AvlGTree<K,V>) o;
 		
 		if(map.size() != this.size())
 			return false;
@@ -368,39 +362,249 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		}
 	}
 
-	protected class EntrySet extends AbstractSet<Map.Entry<K, V>> {
+	private class SubMap implements SortedMap<K, V> {
+		K fromKey, toKey;
+		
+		public SubMap(K fromKey, K toKey){
+			if(fromKey != null && toKey != null && comparator.compare(fromKey, toKey) > 0)
+				throw new IllegalArgumentException("This sucks");
+			
+			this.fromKey = fromKey;
+			this.toKey = toKey;
+		}
+		
+		@Override
+		public void clear() {
+			AvlGTree.this.clear();
+		}
+	
+		@Override
+		public boolean containsKey(Object key) {
+			if(inRange((K)key))
+				return AvlGTree.this.containsKey(key);
+			else 
+				return false;
+		}
+	
+		@Override
+		public boolean containsValue(Object value) {
+			return AvlGTree.this.containsValue(value);
+		}
+	
+		@Override
+		public V get(Object key) {
+			if(inRange((K)key))
+				return AvlGTree.this.get(key);
+			else
+				return null;
+		}
+	
+		@Override
+		public boolean isEmpty() {
+			return AvlGTree.this.isEmpty();
+		}
+	
+		@Override
+		public V put(K key, V value) {
+			if(!inRange(key))
+				throw new IllegalArgumentException();
+			return AvlGTree.this.put(key, value);
+		}
+	
+		@Override
+		public void putAll(Map<? extends K, ? extends V> m) {
+			AvlGTree.this.putAll(m);
+		}
+	
+		@Override
+		public V remove(Object key) {
+			if(inRange((K)key))
+				return AvlGTree.this.remove(key);
+			return null;
+		}
+	
+		@Override
+		public int size() {
+			return AvlGTree.this.size();
+		}
+	
+		@Override
+		public Comparator<? super K> comparator() {
+			return AvlGTree.this.comparator();
+		}
+	
+		@Override
+		public Set<java.util.Map.Entry<K, V>> entrySet() {
+			return AvlGTree.this.entrySet();
+		}
+	
+		@Override
+		public K firstKey() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+	
+		@Override
+		public SortedMap<K, V> headMap(K toKey) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+	
+		@Override
+		public Set<K> keySet() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+	
+		@Override
+		public K lastKey() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+	
+		@Override
+		public SortedMap<K, V> subMap(K fromKey, K toKey) {
+			return null;
+		}
+	
+		@Override
+		public SortedMap<K, V> tailMap(K fromKey) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+	
+		@Override
+		public Collection<V> values() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		
+		public boolean inRange(K key){
+			if(fromKey == null && toKey == null)
+				return true;
+			// TailMap
+			else if(fromKey != null && toKey == null)
+				return comparator.compare(key, fromKey) >= 0 ? true : false;
+			// HeadMap
+			else if(fromKey == null && toKey != null)
+				return comparator.compare(key, toKey) < 0 ? true : false;
+			else if(fromKey != null && toKey != null){
+				// SubMap
+				if(comparator.compare(key, toKey) < 0 ? true : false){
+					if(comparator.compare(key, fromKey) >= 0 ? true: false)
+						return true;
+				}
+			}
+			return false;
+		}
+	
+	}
+
+	protected class EntrySet implements Set<Map.Entry<K, V>> {
+
+		@Override
+		public boolean add(java.util.Map.Entry<K, V> e) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends java.util.Map.Entry<K, V>> c) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void clear() {
+			AvlGTree.this.clear();
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			if (!(o instanceof Map.Entry))
+				throw new ClassCastException();
+		
+			Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
+		
+			V value = entry.getValue();
+			Node<K,V> p = getEntry(entry.getKey());
+			return p != null && valEquals(p.getValue(), value);
+		}
+
+		@Override
+		public boolean containsAll(Collection<?> c) {
+			boolean b = true;
+			for(Object entry : c){
+				if(entry == null)
+					throw new NullPointerException();
+				if(!(entry instanceof Map.Entry))
+					throw new ClassCastException();
+				b = this.contains(entry);
+			}
+			return b;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return AvlGTree.this.isEmpty();
+		}
 
 		@Override
 		public Iterator<java.util.Map.Entry<K, V>> iterator() {
 			return new EntryIterator(root.getFirstEntry());
 		}
-		
+
+		@Override
+		public boolean remove(Object o) {
+			 Map.Entry<K,V> me = (Map.Entry<K,V>)o;
+	         boolean b = AvlGTree.this.containsKey(me.getKey());
+	         AvlGTree.this.remove(me.getKey());
+	         return b;
+		}
+
+		@Override
+		public boolean removeAll(Collection<?> c) {
+			boolean b = false;
+			for(Object entry : c){
+				if(!(entry instanceof Map.Entry))
+					throw new ClassCastException();
+				b = this.remove(entry);
+			}
+			return b;
+		}
+
+		@Override
+		public boolean retainAll(Collection<?> c) {
+			boolean b = false;
+			for(Object entry : c){
+				if(entry == null)
+					throw new NullPointerException();
+				if(!(entry instanceof Map.Entry))
+					throw new ClassCastException();
+				b = this.remove(entry);
+			}
+			return b;
+		}
+
 		@Override
 		public int size() {
 			return AvlGTree.this.size();
 		}
 
-//		@Override
-//		public void clear() {
-//			AvlGTree.this.clear();
-//		}
-//		
-//		@Override
-//		public boolean contains(Object o) {
-//			if (!(o instanceof Map.Entry))
-//				throw new ClassCastException();
-//			
-//			Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
-//		
-//			V value = entry.getValue();
-//			Node<K,V> p = getEntry(entry.getKey());
-//			return p != null && valEquals(p.getValue(), value);
-//		}
-//
-//		@Override
-//		public boolean remove(Object o) {
-//			throw new UnsupportedOperationException();
-//		}
+		@Override
+		public Object[] toArray() {
+			int counter = 0;
+			Object[] resultArray = new Object[this.size()];
+			Iterator<Entry<K, V>> iter = this.iterator();
+			while(iter.hasNext()){
+				resultArray[counter++] = iter.next();
+			}
+			return resultArray;
+		}
+
+		@Override
+		public <T> T[] toArray(T[] a) {
+			// TODO Auto-generated method stub
+			return null;
+		}
 	}
 	
 	final class EntryIterator extends PrivateEntryIterator<Map.Entry<K,V>>{
@@ -498,8 +702,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		public int size() {
 			return AvlGTree.this.size();
 		}
-
-
 	}
 
 	protected class Values extends AbstractCollection<V>{
@@ -516,7 +718,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		
 	}
 	
-	public Node<K, V> successor(Node<K, V> e) {
+ 	public Node<K, V> successor(Node<K, V> e) {
 		if(e == null)
 			return null;
 		else if (e.right != null){
@@ -557,4 +759,4 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	final static  boolean valEquals(Object o1, Object o2){
 		return (o1 == null ? o2 == null :  o1.equals(o2));
 	}
-}
+} 

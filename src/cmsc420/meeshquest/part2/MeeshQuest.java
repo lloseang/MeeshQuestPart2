@@ -25,7 +25,7 @@ public class MeeshQuest {
 	/* input stream/file */
 	private final InputStream xmlInput = System.in;
 //	private File xmlInput;
-	private File xmlOutput;
+//	private File xmlOutput;
 
 	/* output DOM Document tree */
 	private Document results;
