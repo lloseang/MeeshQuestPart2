@@ -149,11 +149,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		return toString(root, 1);
 	}
 	
-	final int compare(Object k1, Object k2){
-		return comparator == null ? ((Comparable<? super K>)k1).compareTo((K)k2)
-				: comparator.compare((K)k1, (K)k2);
-	}
-
 	@Override
 	public boolean equals(Object o){
 		if(o == this)
@@ -375,15 +370,12 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		
 		@Override
 		public void clear() {
-			AvlGTree.this.clear();
+			throw new UnsupportedOperationException();
 		}
 	
 		@Override
 		public boolean containsKey(Object key) {
-			if(inRange((K)key))
-				return AvlGTree.this.containsKey(key);
-			else 
-				return false;
+			return inRange(key, fromKey, toKey) && AvlGTree.this.containsKey(key);
 		}
 	
 		@Override
@@ -393,39 +385,39 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	
 		@Override
 		public V get(Object key) {
-			if(inRange((K)key))
-				return AvlGTree.this.get(key);
-			else
-				return null;
+			return !inRange(key, fromKey, toKey) ? null : AvlGTree.this.get(key);
 		}
 	
 		@Override
 		public boolean isEmpty() {
-			return AvlGTree.this.isEmpty();
+			return false;
 		}
 	
 		@Override
 		public V put(K key, V value) {
-			if(!inRange(key))
-				throw new IllegalArgumentException();
+			if(!inRange(key, fromKey, toKey))
+				throw new IllegalArgumentException("key out of range");
 			return AvlGTree.this.put(key, value);
 		}
 	
 		@Override
 		public void putAll(Map<? extends K, ? extends V> m) {
-			AvlGTree.this.putAll(m);
+			for(Object o : m.entrySet()){
+				if(!(o instanceof Map.Entry))
+					throw new ClassCastException();
+				Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
+				this.put(entry.getKey(),entry.getValue());
+			}
 		}
 	
 		@Override
 		public V remove(Object key) {
-			if(inRange((K)key))
-				return AvlGTree.this.remove(key);
-			return null;
+			return !inRange(key, fromKey, toKey) ? null : AvlGTree.this.remove(key);
 		}
 	
 		@Override
 		public int size() {
-			return AvlGTree.this.size();
+			return 0;
 		}
 	
 		@Override
@@ -435,12 +427,11 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	
 		@Override
 		public Set<java.util.Map.Entry<K, V>> entrySet() {
-			return AvlGTree.this.entrySet();
+			return new SubEntrySet(fromKey, toKey);		
 		}
 	
 		@Override
 		public K firstKey() {
-			// TODO Auto-generated method stub
 			return null;
 		}
 	
@@ -478,26 +469,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 			// TODO Auto-generated method stub
 			return null;
 		}
-		
-		public boolean inRange(K key){
-			if(fromKey == null && toKey == null)
-				return true;
-			// TailMap
-			else if(fromKey != null && toKey == null)
-				return comparator.compare(key, fromKey) >= 0 ? true : false;
-			// HeadMap
-			else if(fromKey == null && toKey != null)
-				return comparator.compare(key, toKey) < 0 ? true : false;
-			else if(fromKey != null && toKey != null){
-				// SubMap
-				if(comparator.compare(key, toKey) < 0 ? true : false){
-					if(comparator.compare(key, fromKey) >= 0 ? true: false)
-						return true;
-				}
-			}
-			return false;
-		}
-	
 	}
 
 	protected class EntrySet implements Set<Map.Entry<K, V>> {
@@ -607,6 +578,158 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		}
 	}
 	
+	protected class SubEntrySet implements Set<Map.Entry<K, V>>{
+		K fromKey, toKey;
+		
+		public SubEntrySet(K fromKey, K toKey){
+			this.fromKey = fromKey;
+			this.toKey = toKey;
+		}
+		
+		@Override
+		public boolean add(java.util.Map.Entry<K, V> e) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends java.util.Map.Entry<K, V>> c) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void clear() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean contains(Object o) {
+			if (!(o instanceof Map.Entry))
+				throw new ClassCastException();
+		
+			Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
+		
+			if(!inRange(entry.getKey(), fromKey, toKey))
+				return false;
+			
+			V value = entry.getValue();
+			Node<K,V> p = getEntry(entry.getKey());
+			
+			return p != null && valEquals(p.getValue(), value);
+		}
+
+		@Override
+		public boolean containsAll(Collection<?> c) {
+			boolean b = true;
+			for(Object entry : c){
+				if(entry == null)
+					throw new NullPointerException();
+				if(!(entry instanceof Map.Entry))
+					throw new ClassCastException();
+				b = this.contains(entry);
+			}
+			return b;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return this.size() == 0 ? true : false;
+		}
+
+		@Override
+		public Iterator<java.util.Map.Entry<K, V>> iterator() {
+			return new SubEntryIterator(root.getFirstEntry(), fromKey, toKey);
+		}
+
+		@Override
+		public boolean remove(Object o) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean removeAll(Collection<?> c) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean retainAll(Collection<?> c) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public int size() {
+			int count = 0;
+			Iterator iter = this.iterator();
+			while(iter.hasNext()){
+				iter.next();
+				count++;
+			}
+			return count;
+		}
+
+		@Override
+		public Object[] toArray() {
+			Object array[] = new Object[this.size()];
+			int counter = 0;
+			Iterator iter = this.iterator();
+			while(iter.hasNext()){
+				array[counter++] = iter.next();
+			}
+			return array;
+		}
+
+		@Override
+		public <T> T[] toArray(T[] a) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+		
+	}
+	
+	final class SubEntryIterator extends PrivateEntryIterator<Map.Entry<K,V>>{
+		private K fromKey, toKey;
+		Node<K,V> first;
+		
+		SubEntryIterator(Node<K, V> first, K fromKey, K toKey) {
+			super();
+			this.first = first;
+			while(fromKey != null && comparator.compare(first.getKey(), fromKey) < 0){
+				first = successor(first);
+				if(first == null)
+					break;
+			}
+			
+			expectedModCount = modCount;
+			lastReturned = null;
+			next = first;
+			
+			this.fromKey = fromKey;
+			this.toKey = toKey;
+		}
+
+		@Override
+		public java.util.Map.Entry<K, V> next() {
+			Node<K,V> e = next;
+			if (e == null)
+				throw new NoSuchElementException();
+			if (modCount != expectedModCount)
+				throw new ConcurrentModificationException();
+			next = successor(e);
+			
+			if(toKey != null && comparator.compare(next.getKey(), toKey) >= 0 ){
+				next = null;
+			}
+			
+			lastReturned = e;
+			return e;
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+	}
+	
 	final class EntryIterator extends PrivateEntryIterator<Map.Entry<K,V>>{
 		
 		EntryIterator(Node<K, V> first) {
@@ -667,6 +790,8 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		Node<K,V> lastReturned;
 		int expectedModCount;
 		
+		PrivateEntryIterator(){};
+		
 		PrivateEntryIterator(Node<K,V> first){
 			expectedModCount = modCount;
 			lastReturned = null;
@@ -716,6 +841,21 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 			return AvlGTree.this.size();
 		}
 		
+		@Override
+		public boolean contains(Object o){
+			return AvlGTree.this.containsValue(o);
+		}
+		
+		@Override
+		public boolean remove(Object o){
+			throw new UnsupportedOperationException();
+		}
+		
+		@Override
+		public void clear(){
+			AvlGTree.this.clear();
+		}
+		
 	}
 	
  	public Node<K, V> successor(Node<K, V> e) {
@@ -756,6 +896,25 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		return null;
 	}
 
+	final boolean inRange(Object key, K fromKey, K toKey){
+		if(fromKey == null && toKey == null)
+			return true;
+		// TailMap
+		else if(fromKey != null && toKey == null)
+			return comparator.compare((K)key, fromKey) >= 0 ? true : false;
+		// HeadMap
+		else if(fromKey == null && toKey != null)
+			return comparator.compare((K)key, toKey) < 0 ? true : false;
+		else if(fromKey != null && toKey != null){
+			// SubMap
+			if(comparator.compare((K)key, toKey) < 0 ? true : false){
+				if(comparator.compare((K)key, fromKey) >= 0 ? true: false)
+					return true;
+			}
+		}
+		return false;
+	}
+	
 	final static  boolean valEquals(Object o1, Object o2){
 		return (o1 == null ? o2 == null :  o1.equals(o2));
 	}

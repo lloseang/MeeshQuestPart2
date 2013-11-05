@@ -114,10 +114,22 @@ public class Test extends TestCase {
 	}
 	
 	public void testCompare(){
-		AvlGTree<City, String> avlg1 = createAVLGtree("RECCAC");
-		AvlGTree<City, String> avlg2 = createAVLGtree("CACCER");
+		AvlGTree<String, String> avlg = createAVLGtreeString("ABCE");
+		SortedMap<String, String> avlg1 = avlg.subMap("F", "H");
+		System.out.println(avlg1.entrySet().size());
+		System.out.println(avlg1.entrySet().contains(new MyEntry<String, String>("D","D")));
+		for(Object o : avlg1.entrySet().toArray()){
+			System.out.println(o.toString());
+		}
+//		Iterator iter = avlg1.entrySet().iterator();
+//		avlg1.put("D","D");
+//		while(iter.hasNext()){
+//			System.out.println(iter.next());
+//		}
 		
 	}
+	
+
 	
 	public void testEntrySet2(){
 		SortedMap<String, String> m = new AvlGTree<String, String>(String.CASE_INSENSITIVE_ORDER, 1);
@@ -130,6 +142,7 @@ public class Test extends TestCase {
 		}
 	}
 	
+
 	public void testSubTreeMap(){
 	      TreeMap<Integer, String> treemap = new TreeMap<Integer, String>();
 	      SortedMap<Integer, String> treemapincl = new TreeMap<Integer, String>();
@@ -137,14 +150,11 @@ public class Test extends TestCase {
 	      // populating tree map
 	      treemap.put(2, "two");
 	      treemap.put(1, "one");
-	      treemap.put(3, "three");
-	      treemap.put(6, "six");
-	      treemap.put(5, "five");      
-	      treemapincl=treemap.subMap(1,5);  
-	      treemapincl.clear();
-//	      System.out.println(treemapincl.containsKey(6));
-	      System.out.println(treemapincl.get(6));
-//	      System.out.println("Sub map values: "+treemapincl);    
+	      
+	       
+	      treemapincl = treemap.subMap(1, 3);
+	      treemapincl.put(3, "three");
+	      System.out.println(treemapincl);
 	}
 	
 	public void testAvlGTreeSubMap(){
