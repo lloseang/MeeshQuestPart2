@@ -27,6 +27,13 @@ import cmsc420.canonicalsolution.PRQuadtree.LeafNode;
 import cmsc420.canonicalsolution.PRQuadtree.Node;
 import cmsc420.drawing.CanvasPlus;
 import cmsc420.geom.Circle2D;
+import cmsc420.pmquadtree.PM1Quadtree;
+import cmsc420.pmquadtree.PM3Quadtree;
+import cmsc420.pmquadtree.PMQuadtree;
+import cmsc420.pmquadtree.Road;
+import cmsc420.pmquadtree.RoadAlreadyMappedException;
+import cmsc420.pmquadtree.RoadOutOfBoundsException;
+import cmsc420.sortedmap.AvlGTree;
 
 /**
  * Processes each command in the MeeshQuest program. Takes in an XML command
@@ -47,22 +54,30 @@ public class Command {
 	 * command)
 	 */
 	protected final TreeMap<String, City> citiesByName = new TreeMap<String, City>();
-
+	
 	/**
 	 * stores created cities sorted by their locations (used with listCities
 	 * command)
 	 */
-	protected final TreeSet<City> citiesByLocation = new TreeSet<City>(
-			new CityLocationComparator());
+	protected final TreeSet<City> citiesByLocation = new TreeSet<City>(new CityLocationComparator());
+
+	protected final AvlGTree<String, City> citiesByNameAvlG = new AvlGTree<String, City>(String.CASE_INSENSITIVE_ORDER, 1);
+	protected final AvlGTree<City, String> citiesByLocationAvlG = new AvlGTree<City, String>(new CityLocationComparator(), 1);
 
 	/** stores mapped cities in a spatial data structure */
 	protected final PRQuadtree prQuadtree = new PRQuadtree();
-
+	protected PMQuadtree pmQuadtree;
+	
 	/** spatial width and height of the PR Quadtree */
 	protected int spatialWidth, spatialHeight;
 
 	/** graphical mapping tool (used with saveMap command) */
 	protected CanvasPlus canvas;
+
+	protected final int PM3 = 3;
+	protected final int PM1 = 1;
+	protected int pmOrder;
+	protected int g;
 
 	/**
 	 * Set the graphical mapping tool to be used.
@@ -205,6 +220,8 @@ public class Command {
 	 *            commands node to be processed
 	 */
 	public void processCommands(final Element node) {
+		pmOrder = Integer.parseInt(node.getAttribute("pmOrder"));
+		g = Integer.parseInt(node.getAttribute("g"));
 		spatialWidth = Integer.parseInt(node.getAttribute("spatialWidth"));
 		spatialHeight = Integer.parseInt(node.getAttribute("spatialHeight"));
 
@@ -216,9 +233,14 @@ public class Command {
 		canvas.addRectangle(0, 0, spatialWidth, spatialHeight, Color.BLACK,
 				false);
 
-		/* set PR Quadtree range */
-		prQuadtree.setRange(spatialWidth, spatialHeight);
-		prQuadtree.setCanvas(canvas);
+		/* set PM Quadtree range */
+		pmQuadtree.setRange(spatialWidth, spatialHeight);
+		pmQuadtree.setCanvas(canvas);
+		
+		if(pmOrder == PM3)
+			pmQuadtree = new PM3Quadtree();
+		else if (pmOrder == PM1)
+			pmQuadtree = new PM1Quadtree();
 	}
 
 	/**
@@ -244,52 +266,18 @@ public class Command {
 		/* create the city */
 		final City city = new City(name, x, y, radius, color);
 
-		if (citiesByName.containsKey(name)) {
+		if (citiesByNameAvlG.containsKey(name)) {
 			addErrorNode("duplicateCityName", commandNode, parametersNode);
-		} else if (citiesByLocation.contains(city)) {
+		} else if (citiesByLocationAvlG.containsKey(city)) {
 			addErrorNode("duplicateCityCoordinates", commandNode,
 					parametersNode);
 		} else {
 			final Element outputNode = results.createElement("output");
 
 			/* add city to dictionary */
-			citiesByName.put(name, city);
-			citiesByLocation.add(city);
-
-			/* add success node to results */
-			addSuccessNode(commandNode, parametersNode, outputNode);
-		}
-	}
-
-	/**
-	 * Processes a deleteCity command. Deletes a city from the dictionary. An
-	 * error occurs if the city does not exist or is currently mapped.
-	 * 
-	 * @param node
-	 *            deleteCity node being processed
-	 */
-	public void processDeleteCity(final Element node) {
-		final Element commandNode = getCommandNode(node);
-		final Element parametersNode = results.createElement("parameters");
-		final String name = processStringAttribute(node, "name", parametersNode);
-
-		if (!citiesByName.containsKey(name)) {
-			/* city with name does not exist */
-			addErrorNode("cityDoesNotExist", commandNode, parametersNode);
-		} else {
-			/* delete city */
-			final Element outputNode = results.createElement("output");
-			final City deletedCity = citiesByName.get(name);
-
-			if (prQuadtree.contains(name)) {
-				/* city is mapped */
-				prQuadtree.remove(deletedCity);
-				addCityNode(outputNode, "cityUnmapped", deletedCity);
-			}
-
-			citiesByName.remove(name);
-			citiesByLocation.remove(deletedCity);
-
+			citiesByNameAvlG.put(name, city);
+			citiesByLocationAvlG.put(city, name);
+		
 			/* add success node to results */
 			addSuccessNode(commandNode, parametersNode, outputNode);
 		}
@@ -308,10 +296,10 @@ public class Command {
 		final Element outputNode = results.createElement("output");
 
 		/* clear data structures */
-		citiesByName.clear();
-		citiesByLocation.clear();
-		prQuadtree.clear();
-
+		citiesByNameAvlG.clear();
+		citiesByLocationAvlG.clear();		
+		pmQuadtree.clear();
+		
 		/* clear canvas */
 		canvas.clear();
 		/* add a rectangle to show where the bounds of the map are located */
@@ -334,7 +322,7 @@ public class Command {
 		final String sortBy = processStringAttribute(node, "sortBy",
 				parametersNode);
 
-		if (citiesByName.isEmpty()) {
+		if (citiesByNameAvlG.isEmpty()) {
 			addErrorNode("noCitiesToList", commandNode, parametersNode);
 		} else {
 			final Element outputNode = results.createElement("output");
@@ -342,9 +330,9 @@ public class Command {
 
 			Collection<City> cityCollection = null;
 			if (sortBy.equals("name")) {
-				cityCollection = citiesByName.values();
+				cityCollection = citiesByNameAvlG.values();
 			} else if (sortBy.equals("coordinate")) {
-				cityCollection = citiesByLocation;
+				cityCollection = citiesByLocationAvlG.keySet();
 			} else {
 				/* XML validator failed */
 				System.exit(-1);
@@ -397,77 +385,6 @@ public class Command {
 	}
 
 	/**
-	 * Maps a city to the spatial map.
-	 * 
-	 * @param node
-	 *            mapCity command node to be processed
-	 */
-	public void processMapCity(final Element node) {
-		final Element commandNode = getCommandNode(node);
-		final Element parametersNode = results.createElement("parameters");
-
-		final String name = processStringAttribute(node, "name", parametersNode);
-
-		final Element outputNode = results.createElement("output");
-
-		if (!citiesByName.containsKey(name)) {
-			addErrorNode("nameNotInDictionary", commandNode, parametersNode);
-		} else if (prQuadtree.contains(name)) {
-			addErrorNode("cityAlreadyMapped", commandNode, parametersNode);
-		} else {
-			City city = citiesByName.get(name);
-			try {
-				/* insert city into PR Quadtree */
-				prQuadtree.add(city);
-
-				/* add city to canvas */
-				canvas.addPoint(city.getName(), city.getX(), city.getY(),
-						Color.BLACK);
-
-				/* add success node to results */
-				addSuccessNode(commandNode, parametersNode, outputNode);
-			} catch (CityAlreadyMappedException e) {
-				addErrorNode("cityAlreadyMapped", commandNode, parametersNode);
-			} catch (CityOutOfBoundsException e) {
-				addErrorNode("cityOutOfBounds", commandNode, parametersNode);
-			}
-		}
-	}
-
-	/**
-	 * Removes a city from the spatial map.
-	 * 
-	 * @param node
-	 *            unmapCity command node to be processed
-	 */
-	public void processUnmapCity(Element node) {
-		final Element commandNode = getCommandNode(node);
-		final Element parametersNode = results.createElement("parameters");
-
-		final String name = processStringAttribute(node, "name", parametersNode);
-
-		final Element outputNode = results.createElement("output");
-
-		if (!citiesByName.containsKey(name)) {
-			addErrorNode("nameNotInDictionary", commandNode, parametersNode);
-		} else if (!prQuadtree.contains(name)) {
-			addErrorNode("cityNotMapped", commandNode, parametersNode);
-		} else {
-			City city = citiesByName.get(name);
-
-			/* unmap the city in the PR Quadtree */
-			prQuadtree.remove(city);
-
-			/* remove city from canvas */
-			canvas.removePoint(city.getName(), city.getX(), city.getY(),
-					Color.BLACK);
-
-			/* add success node to results */
-			addSuccessNode(commandNode, parametersNode, outputNode);
-		}
-	}
-
-	/**
 	 * Processes a saveMap command. Saves the graphical map to a given file.
 	 * 
 	 * @param node
@@ -514,6 +431,18 @@ public class Command {
 			/* add success node to results */
 			addSuccessNode(commandNode, parametersNode, outputNode);
 		}
+	}
+
+	public void processPrintPMQuadtree(Element node) {
+		final Element commandNode = getCommandNode(node);
+		final Element parametersNode = results.createElement("parameters");
+		final Element outputNode = results.createElement("output");
+		
+		if(pmQuadtree.isEmpty()){
+			/* empty PR Quadtree */
+			addErrorNode("mapIsEmpty", commandNode, parametersNode);
+		}
+		
 	}
 
 	/**
@@ -696,11 +625,6 @@ public class Command {
 		}
 	}
 
-	/**
-	 * 2/25/2011
-	 * @param root
-	 * @param point
-	 */
 	private City nearestCityHelper2(Node root, Point2D.Float point) {
 		PriorityQueue<QuadrantDistance> q = new PriorityQueue<QuadrantDistance>();
 		Node currNode = root;
@@ -765,18 +689,45 @@ public class Command {
 		
 	}
 
-	public void printAvlTree(Element commandNode) {
-		// TODO Auto-generated method stub
-		
+	public void printAvlTree(Element node) {
+		final Element commandNode = getCommandNode(node);
+		final Element parametersNode = results.createElement("parameters");
+		final Element outputNode = results.createElement("output");
 	}
 
-	public void mapRoad(Element commandNode) {
-		// TODO Auto-generated method stub
+	public void processMapRoad(Element node) {
+		final Element commandNode = getCommandNode(node);
+		final Element parametersNode = results.createElement("parameters");
+		final Element outputNode = results.createElement("output");
 		
-	}
-
-	public void printPMQuadtree(Element commandNode) {
-		// TODO Auto-generated method stub
+		final String start = processStringAttribute(node, "start", parametersNode);
+		final String end = processStringAttribute(node, "end", parametersNode);
+		final int id = processIntegerAttribute(node, "id", parametersNode);
+		
+		if(!citiesByName.containsKey(start)){
+			addErrorNode("startPointAlreadyExists", commandNode, parametersNode);
+		} else if(!citiesByName.containsKey(end)){
+			addErrorNode("endPointDoesNotExists", commandNode, parametersNode);
+		} else if(start.equals(end)){
+			addErrorNode("startEqualsEnd", commandNode, parametersNode);
+		} else {
+			 Road road = new Road(citiesByNameAvlG.get(start), citiesByNameAvlG.get(end));
+			 try {
+				 pmQuadtree.add(road);
+				 
+				 /* Add road to canvas */
+				
+				 addSuccessNode(commandNode, parametersNode, outputNode);
+			 } catch (Exception e){
+				 
+			 } 
+//			 catch (RoadAlreadyMappedException e){
+//				 addErrorNode("roadAlreadyMapped ", commandNode, parametersNode);
+//			 } catch (RoadOutOfBoundsException e){
+//				 addErrorNode("roadOutOfBounds", commandNode, parametersNode);
+//			 }
+		}
+		
 		
 	}
 
@@ -789,142 +740,4 @@ public class Command {
 		// TODO Auto-generated method stub
 		
 	}
-
-//	/**
-//	 * Examines the distance from each city in a PR Quadtree node from the given
-//	 * point.
-//	 * 
-//	 * @param node
-//	 *            PR Quadtree node being examined
-//	 * @param point
-//	 *            point
-//	 * @param nearCities
-//	 *            priority queue of cities organized by how close they are to
-//	 *            the point
-//	 */
-//	private void nearestCityHelper(Node node, Point2D.Float point,
-//			PriorityQueue<NearestCity> nearCities) {
-//		if (node.getType() == Node.LEAF) {
-//			LeafNode leaf = (LeafNode) node;
-//			NearestCity nearCity = new NearestCity(leaf.getCity(), point
-//					.distance(leaf.getCity().toPoint2D()));
-//			if (nearCity.compareTo(nearCities.peek()) < 0) {
-//				nearCities.add(nearCity);
-//			}
-//		} else if (node.getType() == Node.INTERNAL) {
-//			InternalNode internal = (InternalNode) node;
-//			TreeSet<NearestQuadrant> nearestQuadrants = new TreeSet<NearestQuadrant>();
-//			for (int i = 0; i < 4; i++) {
-//				nearestQuadrants.add(new NearestQuadrant(Shape2DDistanceCalculator.distance(point, internal
-//						.getChildRegion(i)), i));
-//			}
-//			
-//			for (NearestQuadrant nearQuadrant : nearestQuadrants) {
-//				final int i = nearQuadrant.getQuadrant(); 
-//				
-//				if (Shape2DDistanceCalculator.distance(point, internal
-//						.getChildRegion(i)) <= nearCities.peek().getDistance()) {
-//
-//					nearestCityHelper(internal.getChild(i), point, nearCities);
-//				}
-//			}
-//		}
-//	}
-//	
-//	private class NearestQuadrant implements Comparable<NearestQuadrant> {
-//
-//		private double distance;
-//		
-//		private int quadrant;
-//		
-//		public NearestQuadrant(double distance, int quadrant) {
-//			this.distance = distance;
-//			this.quadrant = quadrant;
-//		}
-//
-//		public int getQuadrant() {
-//			return quadrant;
-//		}
-//
-//		public int compareTo(NearestQuadrant o) {
-//			if (distance < o.distance) {
-//				return -1;
-//			} else if (distance > o.distance) {
-//				return 1;
-//			} else {
-//				if (quadrant < o.quadrant) {
-//					return -1;
-//				} else if (quadrant > o.quadrant) {
-//					return 1;
-//				} else {
-//					return 0;
-//				}
-//			}
-//		}
-//		
-//	}
-//
-//	/**
-//	 * Used with the nearestCity command. Each NearestCity contains a city and
-//	 * the city's distance from a give point. A NearestCity is less than another
-//	 * if it's distance is smaller than the other's.
-//	 * 
-//	 * @author Ben Zoller
-//	 * @version 1.0
-//	 */
-//	private class NearestCity implements Comparable<NearestCity> {
-//		/** city */
-//		private final City city;
-//
-//		/** city's distance to a point */
-//		private final double distance;
-//
-//		/**
-//		 * Constructs a city and it's distance from a point.
-//		 * 
-//		 * @param city
-//		 *            city
-//		 * @param distance
-//		 *            distance from a point
-//		 */
-//		private NearestCity(final City city, final double distance) {
-//			this.city = city;
-//			this.distance = distance;
-//		}
-//
-//		/**
-//		 * Gets the city
-//		 * 
-//		 * @return city
-//		 */
-//		private City getCity() {
-//			return city;
-//		}
-//
-//		/**
-//		 * Compares one city to another based on their distances.
-//		 * 
-//		 * @param otherNearCity
-//		 *            other city
-//		 * @return distance comparison results
-//		 */
-//		public int compareTo(final NearestCity otherNearCity) {
-//			if (distance < otherNearCity.distance) {
-//				return -1;
-//			} else if (distance > otherNearCity.distance) {
-//				return 1;
-//			} else {
-//				return city.getName().compareTo(otherNearCity.city.getName());
-//			}
-//		}
-//
-//		/**
-//		 * Gets the distance
-//		 * 
-//		 * @return distance
-//		 */
-//		public double getDistance() {
-//			return distance;
-//		}
-//	}
 }

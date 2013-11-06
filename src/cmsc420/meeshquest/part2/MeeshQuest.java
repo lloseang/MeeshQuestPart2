@@ -23,9 +23,9 @@ import cmsc420.xml.XmlUtility;
 public class MeeshQuest {
 
 	/* input stream/file */
-	private final InputStream xmlInput = System.in;
-//	private File xmlInput;
-//	private File xmlOutput;
+//	private final InputStream xmlInput = System.in;
+	private File xmlInput;
+	private File xmlOutput;
 
 	/* output DOM Document tree */
 	private Document results;
@@ -48,7 +48,7 @@ public class MeeshQuest {
 	public void processInput() {
 		try {
 			// testing purposes
-//			xmlInput = new File("part2.public.avl.input.xml");
+			xmlInput = new File("part2.public.avl.input.xml");
 //			xmlOutput = new File("output.xml");
 
 			/* create output */
@@ -116,8 +116,6 @@ public class MeeshQuest {
 			command.processCommands(commandNode);
 		} else if (name.equals("createCity")) {
 			command.processCreateCity(commandNode);
-		} else if (name.equals("deleteCity")) {
-			command.processDeleteCity(commandNode);
 		} else if (name.equals("clearAll")) {
 			command.processClearAll(commandNode);
 		} else if (name.equals("listCities")) {
@@ -125,13 +123,9 @@ public class MeeshQuest {
 		} else if (name.equals("printAvlTree")){
 			command.printAvlTree(commandNode);
 		} else if (name.equals("mapRoad")){
-			command.mapRoad(commandNode);
+			command.processMapRoad(commandNode);
 		} else if (name.equals("printPMQuadtree")){
-			command.printPMQuadtree(commandNode);
-		} else if (name.equals("mapCity")) {
-			command.processMapCity(commandNode);
-		} else if (name.equals("unmapCity")) {
-			command.processUnmapCity(commandNode);
+			command.processPrintPMQuadtree(commandNode);
 		} else if (name.equals("saveMap")) {
 			command.processSaveMap(commandNode);
 		} else if (name.equals("printPRQuadtree")) {
