@@ -63,9 +63,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	public V get(Object key) {
 		if(key == null)
 			throw new NullPointerException();
-		if(root == null)
-			return null;
-		return get(root, (K) key);
+		return root == null ? null : get(root, (K) key);
 	}
 	
 	@Override
@@ -75,10 +73,8 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	@Override
 	public V put(K key, V value) {
-		if(root == null)
-			root = insert(key, value, root, null);
-		else
-			root = insert(key, value, root, root.parent);
+		root = (root == null) ? insert(key, value, root, null) :
+				                insert(key, value, root, root.parent);
 		return previousValue;
 	}
 	
@@ -101,10 +97,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	@Override
 	public int size() {
-		if (root == null)
-			return 0;
-		else
-			return size(root);
+		return (root == null) ? 0 : size(root);
 	}
 
 	@Override
@@ -142,7 +135,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	public SortedMap<K, V> tailMap(K fromKey) {
 		return new SubMap(fromKey, null);
 	}
-
 
 	@Override
 	public String toString(){
@@ -182,7 +174,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		
 		return true;
 	}
-
+	
 	@Override
 	public Collection<V> values() {
 		Collection<V> vs = values;
@@ -380,6 +372,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	
 		@Override
 		public boolean containsValue(Object value) {
+			
 			return AvlGTree.this.containsValue(value);
 		}
 	
@@ -390,7 +383,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	
 		@Override
 		public boolean isEmpty() {
-			return false;
+			return entrySet().isEmpty();
 		}
 	
 		@Override
@@ -417,7 +410,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	
 		@Override
 		public int size() {
-			return 0;
+			return entrySet().size();
 		}
 	
 		@Override
@@ -466,7 +459,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	
 		@Override
 		public Collection<V> values() {
-			// TODO Auto-generated method stub
 			return null;
 		}
 	}
@@ -686,13 +678,15 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		
 	}
 	
-	final class SubEntryIterator extends PrivateEntryIterator<Map.Entry<K,V>>{
+	protected class SubEntryIterator extends PrivateEntryIterator<Map.Entry<K,V>>{
 		private K fromKey, toKey;
 		Node<K,V> first;
 		
 		SubEntryIterator(Node<K, V> first, K fromKey, K toKey) {
 			super();
 			this.first = first;
+			this.fromKey = fromKey;
+			
 			while(fromKey != null && comparator.compare(first.getKey(), fromKey) < 0){
 				first = successor(first);
 				if(first == null)
@@ -723,11 +717,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 			lastReturned = e;
 			return e;
 		}
-
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
 	}
 	
 	final class EntryIterator extends PrivateEntryIterator<Map.Entry<K,V>>{
@@ -740,12 +729,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		public java.util.Map.Entry<K, V> next() {
 			return nextEntry();
 		}
-
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
-		
 	}
 	
 	final class ValueIterator extends PrivateEntryIterator<V>{
@@ -757,18 +740,10 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		@Override
 		public V next() {
 			return nextEntry().getValue();
-		}
-
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
-		
-		
+		}	
 	}
 	
 	final class KeyIterator extends PrivateEntryIterator<K>{
-
 		KeyIterator(Node<K, V> first) {
 			super(first);
 		}
@@ -777,12 +752,6 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		public K next() {
 			return nextEntry().getKey();
 		}
-
-		@Override
-		public void remove() {
-			throw new UnsupportedOperationException();
-		}
-		
 	}
 	
 	protected abstract class PrivateEntryIterator<T> implements Iterator<T>{
@@ -812,8 +781,12 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 			next = successor(e);
 			lastReturned = e;
 			return e;
-		}		
+		}	
 		
+		@Override 
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
 	}
 	
 	protected class KeySet extends AbstractSet<K>{

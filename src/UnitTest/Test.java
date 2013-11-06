@@ -161,7 +161,10 @@ public class Test extends TestCase {
 		AvlGTree<String, String> tree = createAVLGtreeString("ABCDFG");
 		SortedMap<String, String> sm = tree.subMap("A", "E");
 		tree.put("E", "E-Value");
-		System.out.println(tree.subMap("G", "A").containsKey("E"));
+		
+		for(String value : sm.values()){
+			
+		}
 	}
 	
 	private AvlGTree<City, String> createAVLGtree(String string) {

@@ -7,9 +7,7 @@ import cmsc420.drawing.CanvasPlus;
 
 public abstract class PMQuadtree {
 	protected Validator validator;
-	protected int spatialWidth;
-	protected int spatialHeight;
-	protected Point2D.Float spatialOrigin;
+	protected int lBound, rBound, uBound, dBound;
 	protected Node root;
 	protected WhiteNode whiteNode = new WhiteNode();
 	protected CanvasPlus canvas;
@@ -48,16 +46,16 @@ public abstract class PMQuadtree {
 		
 	}
 	
-	
 	public PMQuadtree(Validator validator){
-		this.spatialOrigin = new Point2D.Float(0,0);
+		this.lBound = 0;
+		this.dBound = 0;
 		this.validator = validator;
 		this.root = whiteNode;
 	}
 	
 	public void setRange(int spatialWidth, int spatialHeight){
-		this.spatialWidth = spatialWidth;
-		this.spatialHeight = spatialHeight;
+		this.rBound = spatialWidth;
+		this.uBound = spatialHeight;
 	}
 
 	public void clear() {
@@ -78,8 +76,7 @@ public abstract class PMQuadtree {
 		return false;
 	}
 
-	public void add(Road road, int lBound, int rBound, int uBound, int dBound) {
+	public void add(Road road) {
 		root = root.add(road, lBound, rBound, uBound, dBound);
-		
 	}
 }
