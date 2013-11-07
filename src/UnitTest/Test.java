@@ -129,8 +129,6 @@ public class Test extends TestCase {
 		
 	}
 	
-
-	
 	public void testEntrySet2(){
 		SortedMap<String, String> m = new AvlGTree<String, String>(String.CASE_INSENSITIVE_ORDER, 1);
 		m.put("Auto","Fail");
@@ -142,7 +140,6 @@ public class Test extends TestCase {
 		}
 	}
 	
-
 	public void testSubTreeMap(){
 	      TreeMap<Integer, String> treemap = new TreeMap<Integer, String>();
 	      SortedMap<Integer, String> treemapincl = new TreeMap<Integer, String>();
@@ -210,4 +207,5 @@ public class Test extends TestCase {
 	        return old;
 	    }
 	}
+
 }
