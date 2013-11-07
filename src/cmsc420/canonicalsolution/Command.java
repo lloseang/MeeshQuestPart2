@@ -54,13 +54,8 @@ public class Command {
 	 * command)
 	 */
 	protected final TreeMap<String, City> citiesByName = new TreeMap<String, City>();
-	
-	/**
-	 * stores created cities sorted by their locations (used with listCities
-	 * command)
-	 */
 	protected final TreeSet<City> citiesByLocation = new TreeSet<City>(new CityLocationComparator());
-
+	
 	protected final AvlGTree<String, City> citiesByNameAvlG = new AvlGTree<String, City>(String.CASE_INSENSITIVE_ORDER, 1);
 	protected final AvlGTree<City, String> citiesByLocationAvlG = new AvlGTree<City, String>(new CityLocationComparator(), 1);
 
@@ -266,9 +261,9 @@ public class Command {
 		/* create the city */
 		final City city = new City(name, x, y, radius, color);
 
-		if (citiesByNameAvlG.containsKey(name)) {
+		if (citiesByName.containsKey(name)) {
 			addErrorNode("duplicateCityName", commandNode, parametersNode);
-		} else if (citiesByLocationAvlG.containsKey(city)) {
+		} else if (citiesByLocation.contains(city)) {
 			addErrorNode("duplicateCityCoordinates", commandNode,
 					parametersNode);
 		} else {
@@ -277,6 +272,8 @@ public class Command {
 			/* add city to dictionary */
 			citiesByNameAvlG.put(name, city);
 			citiesByLocationAvlG.put(city, name);
+			citiesByName.put(name, city);
+			citiesByLocation.add(city);
 		
 			/* add success node to results */
 			addSuccessNode(commandNode, parametersNode, outputNode);
@@ -297,7 +294,10 @@ public class Command {
 
 		/* clear data structures */
 		citiesByNameAvlG.clear();
-		citiesByLocationAvlG.clear();		
+		citiesByLocationAvlG.clear();	
+		citiesByName.clear();
+		citiesByLocation.clear();	
+		
 		pmQuadtree.clear();
 		
 		/* clear canvas */
@@ -322,7 +322,7 @@ public class Command {
 		final String sortBy = processStringAttribute(node, "sortBy",
 				parametersNode);
 
-		if (citiesByNameAvlG.isEmpty()) {
+		if (citiesByName.isEmpty()) {
 			addErrorNode("noCitiesToList", commandNode, parametersNode);
 		} else {
 			final Element outputNode = results.createElement("output");
@@ -330,9 +330,9 @@ public class Command {
 
 			Collection<City> cityCollection = null;
 			if (sortBy.equals("name")) {
-				cityCollection = citiesByNameAvlG.values();
+				cityCollection = citiesByName.values();
 			} else if (sortBy.equals("coordinate")) {
-				cityCollection = citiesByLocationAvlG.keySet();
+				cityCollection = citiesByLocation;
 			} else {
 				/* XML validator failed */
 				System.exit(-1);
@@ -711,7 +711,7 @@ public class Command {
 		} else if(start.equals(end)){
 			addErrorNode("startEqualsEnd", commandNode, parametersNode);
 		} else {
-			 Road road = new Road(citiesByNameAvlG.get(start), citiesByNameAvlG.get(end));
+			 Road road = new Road(citiesByName.get(start), citiesByName.get(end));
 			 try {
 				 pmQuadtree.add(road);
 				 
