@@ -1,14 +1,17 @@
 package cmsc420.pmquadtree;
 
 import java.awt.Color;
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Point2D.Float;
 import java.awt.geom.Rectangle2D;
+import java.util.TreeSet;
 
 import cmsc420.canonicalsolution.City;
 import cmsc420.canonicalsolution.PRQuadtree.Node;
 import cmsc420.drawing.CanvasPlus;
 import cmsc420.geom.Circle2D;
+import cmsc420.geom.Inclusive2DIntersectionVerifier;
 
 public abstract class PMQuadtree {
 	protected Validator validator;
@@ -20,51 +23,78 @@ public abstract class PMQuadtree {
 	protected Node root;
 	protected WhiteNode whiteNode = new WhiteNode();
 	protected CanvasPlus canvas;
+	protected Rectangle2D.Float spatialBound;
 	
 	abstract class Node{
 		protected int width;
 		protected int height;
 		protected Point2D.Float origin;
 		protected Road road;	
-		abstract Node add(Road road, Point2D.Float origin, int width, int height);
-		abstract Node addBlackNode(City city, Road road, Point2D.Float origin, int width, int height);
+		protected TreeSet<Road> roads;
+		protected Rectangle2D.Float region;
+		abstract Node add(Road road, Point2D.Float origin, int width, int height, Rectangle2D.Float region);
 	}
 	
 	public class BlackNode extends Node{
 		protected City city;
 		protected GreyNode greyNode;
+		protected TreeSet<Road> roads;
 		
-		public BlackNode(City city, Road road, Point2D.Float origin, int width, int height){
+		public BlackNode(City city, Road road, Point2D.Float origin, int width, int height, Rectangle2D.Float region){
 			this.city = city;
 			this.road = road;
 			this.origin = origin;
 			this.width = width;
 			this.height = height;
+			this.region = region;
+			this.roads = new TreeSet<Road>(new RoadComparator());
+			this.roads.add(this.road);
+		}
+		
+		public void setBounds(Point2D.Float origin, int width, int height){
+			this.origin = origin;
+			this.width = width;
+			this.height = height;
+		}
+		
+		public void setCity(City city){
+			this.city = city;
 		}
 		
 		@Override
-		public Node add(Road road, Point2D.Float origin, int width, int height) {
-			greyNode = new GreyNode(road, origin, width, height);
-			greyNode.addBlackNode(this.city, this.road, this.origin, this.width, this.height);
-			greyNode.addBlackNode(road.start, road, origin, width, height);
-			greyNode.addBlackNode(road.end, road, origin, width, height);
-			return greyNode;
-		}
-
-		@Override
-		Node addBlackNode(City city, Road road, Point2D.Float origin, int width, int height) {
-			greyNode = new GreyNode(road, origin, width, height);
-			greyNode.addBlackNode(this.city, this.road, this.origin, this.width, this.height);
-			greyNode.addBlackNode(city, road, origin, width, height);
+		public Node add(Road road, Point2D.Float origin, int width, int height, Rectangle2D.Float region) {		
+			if(road.start.equals(road.end))
+				throw new RuntimeException();
 			
-			System.out.println(greyNode.toString());
-			return greyNode;
+			Line2D.Float segment = road.getLine();
+			
+			for(Road r : roads){
+				if(Inclusive2DIntersectionVerifier.intersects(segment, r.getLine())){
+					throw new RuntimeException();
+				}
+			}
+			
+			if(road.start.equals(city) || road.end.equals(city)){
+				roads.add(road);
+				return this;
+			}
+			
+			GreyNode grey = new GreyNode(road, origin, width, height, region);
+			if(Inclusive2DIntersectionVerifier.intersects(road.start.toPoint2D(), region)){
+				
+			}
+			
+			
+			
+			
+			return null;
 		}
 		
 		@Override
 		public String toString(){
-			return String.format("Black|%s|(%d-%d),(%d-%d)>", city.toString(), (int) origin.x, (int) origin.x + width, (int) origin.y, (int) origin.y + height);
+			return String.format("%s|<%d-%d, %d-%d>|%s", city == null ? "Null" : city.toString(), (int) origin.x, (int) origin.x + width, (int) origin.y, (int) origin.y + height, roads.toString());
 		}
+
 	}
 	
 	public class GreyNode extends Node{
@@ -74,6 +104,7 @@ public abstract class PMQuadtree {
 		protected Point2D.Float[] origins;
 		protected int halfWidth;
 		protected int halfHeight;
+		protected Rectangle2D.Float region;
 		
 		public void init(){
 			children = new Node[4];
@@ -83,8 +114,7 @@ public abstract class PMQuadtree {
 
 			origins = new Point2D.Float[4];
 			origins[0] = new Point2D.Float(origin.x, origin.y + halfHeight);
-			origins[1] = new Point2D.Float(origin.x + halfWidth, origin.y
-					+ halfHeight);
+			origins[1] = new Point2D.Float(origin.x + halfWidth, origin.y + halfHeight);
 			origins[2] = new Point2D.Float(origin.x, origin.y);
 			origins[3] = new Point2D.Float(origin.x + halfWidth, origin.y);
 			
@@ -106,13 +136,13 @@ public abstract class PMQuadtree {
 			}
 		}
 		
-		public GreyNode(Road road, Point2D.Float origin, int width, int height) {
+		public GreyNode(Road road, Point2D.Float origin, int width, int height, Rectangle2D.Float region) {
 			this.origin = origin;
 			this.width = width;
 			this.height = height;
 			this.halfWidth = width >> 1;
 			this.halfHeight = height >> 1;
-			
+			this.region = region;
 			this.init();
 		}
 		
@@ -125,43 +155,20 @@ public abstract class PMQuadtree {
 		}
 		
 		@Override
-		public Node add(Road road, Float origin, int width, int height) {
-			/* If the two cities are in the same quadrant, 
-			 * partition into grey nodes again */
-			for (int i = 0; i < 4; i++) {
-				if(intersects(road.start.toPoint2D(), regions[i]) && intersects(road.end.toPoint2D(), regions[i])){
-					children[i] = children[i].add(road, origins[i], halfWidth, halfHeight);
-					return this;
-				}
-			}
+		public Node add(Road road, Float origin, int width, int height, Rectangle2D.Float region) {
+			if(road.start.equals(road.end))
+				throw new RuntimeException();
 			
-			/* If the two cities are not in the same quadrant, 
-			 * partition into grey nodes again */
-			Node temp = null;
+			Line2D.Float segment = road.getLine();
 			for (int i = 0; i < 4; i++){
-				if(intersects(road.start.toPoint2D(), regions[i])){
-					temp = children[i].addBlackNode(road.start, road, origins[i], halfWidth, halfHeight);
-					children[i] = temp == null ? children[i] : temp;
-				}
-				if(intersects(road.end.toPoint2D(), regions[i])){
-					temp = children[i].addBlackNode(road.end, road, origins[i], halfWidth, halfHeight);
-					children[i] = temp == null ? children[i] : temp;
+				if(Inclusive2DIntersectionVerifier.intersects(segment, regions[i])){
+					children[i] = children[i].add(road, origins[i], halfWidth, halfHeight, regions[i]);
 				}
 			}
 			return this;
 		}
 
-		@Override
-		Node addBlackNode(City city, Road road, Point2D.Float origin, int width, int height) {
-			for (int i = 0; i < 4; i++){
-				if(intersects(city.toPoint2D(), regions[i])){
-					children[i] = children[i].addBlackNode(city, road, origins[i], halfWidth, halfHeight);
-					System.out.println(children[i].toString());
-					return children[i];
-				}
-			}
-			return null;
-		}
+	
 		
 		@Override
 		public String toString(){
@@ -171,18 +178,38 @@ public abstract class PMQuadtree {
 	
 	public class WhiteNode extends Node{
 		@Override
-		public Node add(Road road, Point2D.Float origin, int width, int height) {
-			GreyNode grey = new GreyNode(road, origin, width, height);
-			grey.addBlackNode(road.start, road, origin, width, height);
-			grey.addBlackNode(road.end, road, origin, width, height);
+		public Node add(Road road, Point2D.Float origin, int width, int height, Rectangle2D.Float region) {
+			if(road.start.equals(road.end))
+				throw new RuntimeException();
+		
+			boolean startOutOfBounds = Inclusive2DIntersectionVerifier.intersects(road.start.toPoint2D(), spatialBound);
+			boolean endOutOfBounds = Inclusive2DIntersectionVerifier.intersects(road.end.toPoint2D(), spatialBound);
+			Line2D.Float line = road.getLine();
+			BlackNode blackNode;
+			if(!(startOutOfBounds && endOutOfBounds)){	
+				if (startOutOfBounds)
+					return new BlackNode(road.start, road, origin, width, height, region);
+				if (endOutOfBounds)
+					return new BlackNode(road.end, road, origin, width, height, region);
+			}
+		
+			GreyNode grey = new GreyNode(road, origin, width, height, region);
+			for (int i = 0; i < 4; i++){	
+				if(Inclusive2DIntersectionVerifier.intersects(line, grey.regions[i])){
+					blackNode = new BlackNode(null, road, origin, width, height, grey.regions[i]);
+					if(Inclusive2DIntersectionVerifier.intersects(road.start.toPoint2D(), grey.regions[i])){
+						blackNode.setCity(road.start);
+					}
+					if(Inclusive2DIntersectionVerifier.intersects(road.end.toPoint2D(), grey.regions[i])){
+						blackNode.setCity(road.end);
+					}
+					blackNode.setBounds(grey.origins[i], grey.halfWidth, grey.halfHeight);
+					grey.children[i] = blackNode;
+				}
+			}
 			return grey;
 		}
 
-		@Override
-		Node addBlackNode(City city, Road road, Point2D.Float origin, int width, int height) {
-			return new BlackNode(city, road, origin, width, height);
-		}
-		
 		@Override
 		public String toString(){
 			return "White";
@@ -204,6 +231,10 @@ public abstract class PMQuadtree {
 		this.spatialWidth = spatialWidth;
 		this.spatialHeight = spatialHeight;
 	}
+	
+	public void setSpatialBound(){
+		this.spatialBound = new Rectangle2D.Float(0,0,this.spatialWidth, this.spatialHeight);
+	}
 
 	public void clear() {
 		this.root = whiteNode;
@@ -224,59 +255,16 @@ public abstract class PMQuadtree {
 	}
 
 	public void add(Road road) {
-		root = root.add(road, spatialOrigin, spatialWidth, spatialHeight);
+		root = root.add(road, spatialOrigin, spatialWidth, spatialHeight, spatialBound);
+	}
+	
+	protected boolean intersectsBound(Point2D point){
+		return (point.getX() >= spatialBound.getMinX() && point.getX() < spatialBound.getMaxX()
+				&& point.getY() >= spatialBound.getMinY() && point.getY() < spatialBound.getMaxY());
 	}
 	
 	protected boolean intersects(Point2D point, Rectangle2D rect) {
-		return (point.getX() >= rect.getMinX() && point.getX() < rect.getMaxX()
-				&& point.getY() >= rect.getMinY() && point.getY() < rect
-				.getMaxY());
-	}
-	
-	public boolean intersects(Circle2D circle, Rectangle2D rect) {
-		final double radiusSquared = circle.getRadius() * circle.getRadius();
-
-		/* translate coordinates, placing circle at origin */
-		final Rectangle2D.Double r = new Rectangle2D.Double(rect.getX()
-				- circle.getCenterX(), rect.getY() - circle.getCenterY(), rect
-				.getWidth(), rect.getHeight());
-
-		if (r.getMaxX() < 0) {
-			/* rectangle to left of circle center */
-			if (r.getMaxY() < 0) {
-				/* rectangle in lower left corner */
-				return ((r.getMaxX() * r.getMaxX() + r.getMaxY() * r.getMaxY()) < radiusSquared);
-			} else if (r.getMinY() > 0) {
-				/* rectangle in upper left corner */
-				return ((r.getMaxX() * r.getMaxX() + r.getMinY() * r.getMinY()) < radiusSquared);
-			} else {
-				/* rectangle due west of circle */
-				return (Math.abs(r.getMaxX()) < circle.getRadius());
-			}
-		} else if (r.getMinX() > 0) {
-			/* rectangle to right of circle center */
-			if (r.getMaxY() < 0) {
-				/* rectangle in lower right corner */
-				return ((r.getMinX() * r.getMinX() + r.getMaxY() * r.getMaxY()) < radiusSquared);
-			} else if (r.getMinY() > 0) {
-				/* rectangle in upper right corner */
-				return ((r.getMinX() * r.getMinX() + r.getMinY() * r.getMinY()) <= radiusSquared);
-			} else {
-				/* rectangle due east of circle */
-				return (r.getMinX() <= circle.getRadius());
-			}
-		} else {
-			/* rectangle on circle vertical centerline */
-			if (r.getMaxY() < 0) {
-				/* rectangle due south of circle */
-				return (Math.abs(r.getMaxY()) < circle.getRadius());
-			} else if (r.getMinY() > 0) {
-				/* rectangle due north of circle */
-				return (r.getMinY() <= circle.getRadius());
-			} else {
-				/* rectangle contains circle center point */
-				return true;
-			}
-		}
+		return (point.getX() >= rect.getMinX() && point.getX() <= rect.getMaxX()
+				&& point.getY() >= rect.getMinY() && point.getY() <= rect.getMaxY());
 	}
 }

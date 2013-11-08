@@ -27,7 +27,6 @@ public class Node<K,V> implements java.util.Map.Entry<K, V> {
 		this.right = right;
 		this.parent = parent;
 		this.height = 0;
-		
 	}	
 	
 	@Override
