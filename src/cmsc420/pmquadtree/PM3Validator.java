@@ -6,8 +6,7 @@ public class PM3Validator implements Validator{
 
 	@Override
 	public boolean valid(BlackNode black) {
-		// TODO Auto-generated method stub
-		return false;
+		return black.numCities <= 1 ? true : false;
 	}
 
 }

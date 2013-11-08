@@ -16,14 +16,14 @@ public class TestPM extends TestCase {
 		PM3Quadtree pmQuadtree = new PM3Quadtree();
 		int spatialWidth = 8;
 		int spatialHeight = 8;
-		Road r1 = new Road(new City("C", 0,0, 10, "C"), new City("B", 7, 7, 10, "B"));	
+		Road r1 = new Road(new City("C", 0,0, 10, "C"), new City("B", 7, 8, 10, "B"));	
+		Road r2 = new Road(new City("C", 0,0, 10, "C"), new City("E", 0, 7, 10, "E"));	
 		pmQuadtree.setRange(spatialWidth, spatialHeight);
 		pmQuadtree.setSpatialBound();
 		
 		pmQuadtree.add(r1);
-		
+		pmQuadtree.add(r2);
 	}
-	
 	
 	public void testRectangle(){
 		Rectangle2D.Float rect = new Rectangle2D.Float(0,0,8,8);
