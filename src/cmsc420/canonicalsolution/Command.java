@@ -30,6 +30,8 @@ import cmsc420.geom.Circle2D;
 import cmsc420.pmquadtree.PM1Quadtree;
 import cmsc420.pmquadtree.PM3Quadtree;
 import cmsc420.pmquadtree.PMQuadtree;
+import cmsc420.pmquadtree.PMQuadtree.BlackNode;
+import cmsc420.pmquadtree.PMQuadtree.WhiteNode;
 import cmsc420.pmquadtree.Road;
 import cmsc420.pmquadtree.RoadAlreadyMappedException;
 import cmsc420.pmquadtree.RoadOutOfBoundsException;
@@ -413,6 +415,21 @@ public class Command {
 	 * @param node
 	 *            printPRQuadtree command to be processed
 	 */
+	public void processPrintAvlGtree(final Element node){
+		final Element commandNode = getCommandNode(node);
+		final Element parametersNode = results.createElement("parameters");
+		final Element outputNode = results.createElement("output");
+		
+		if(citiesByName.isEmpty()){
+			addErrorNode("mapIsEmpty", commandNode, parametersNode);
+		} else {
+			final Element avlgNode = results.createElement("AvlGTree");
+			
+			printAvlGtreeHelper();
+		}
+		
+	}
+	
 	public void processPrintPRQuadtree(final Element node) {
 		final Element commandNode = getCommandNode(node);
 		final Element parametersNode = results.createElement("parameters");
@@ -439,10 +456,23 @@ public class Command {
 		final Element outputNode = results.createElement("output");
 		
 		if(pmQuadtree.isEmpty()){
-			/* empty PR Quadtree */
 			addErrorNode("mapIsEmpty", commandNode, parametersNode);
+		} else {
+			final Element quadtreeNode = results.createElement("quadtree");
+			printPMQuadtreeHelper(pmQuadtree.getRoot(), quadtreeNode);
+			
+			outputNode.appendChild(quadtreeNode);
+			addSuccessNode(commandNode, parametersNode, outputNode);
 		}
 		
+	}
+
+	private void printPMQuadtreeHelper(final cmsc420.pmquadtree.PMQuadtree.Node currentNode,
+			final Element xmlNode) {
+		if (currentNode instanceof WhiteNode) {
+			Element white = results.createElement("white");
+			xmlNode.appendChild(white);
+		} 
 	}
 
 	/**

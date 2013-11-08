@@ -24,7 +24,7 @@ public abstract class PMQuadtree {
 	protected CanvasPlus canvas;
 	protected Rectangle2D.Float spatialBound;
 	
-	abstract class Node{
+	public abstract class Node{
 		abstract Node add(Road road, Point2D.Float origin, int width, int height);
 	}
 	
@@ -222,5 +222,10 @@ public abstract class PMQuadtree {
 
 	public void add(Road road) {
 		root = root.add(road, spatialOrigin, spatialWidth, spatialHeight);
+	}
+
+	
+	public Node getRoot() {
+		return root;
 	}
 }
