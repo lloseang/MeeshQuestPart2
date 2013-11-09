@@ -169,7 +169,7 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		if(o == this)
 			return true;
 		
-		if(!(o instanceof AvlGTree))
+		if(!(o instanceof Map))
 			return false;
 		
 		Map<K,V> m = (Map<K,V>) o;

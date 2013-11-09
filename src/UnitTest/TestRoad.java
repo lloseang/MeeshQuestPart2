@@ -1,11 +1,13 @@
 package UnitTest;
 
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import cmsc420.canonicalsolution.City;
 import cmsc420.pmquadtree.PM3Quadtree;
 import cmsc420.pmquadtree.Road;
 import cmsc420.pmquadtree.RoadComparator;
+import cmsc420.sortedmap.AvlGTree;
 import junit.framework.TestCase;
 
 public class TestRoad extends TestCase{
@@ -35,6 +37,20 @@ public class TestRoad extends TestCase{
 <mapRoad start="I" end="H"/>
 	 * 
 	 */
+	
+	public void testKeving(){
+		  AvlGTree<String, Integer> temp = new AvlGTree<String, Integer>(null, 1);
+		  TreeMap<String, Integer> treeTemp = new TreeMap<String, Integer>();
+		  
+		  temp.put("Kevin", 1);
+		  treeTemp.put("Kevin", 1);
+		  
+		  System.out.println(temp.toString());
+		  System.out.println(treeTemp);
+		     
+		  System.out.println(temp.hashCode());
+		  System.out.println(treeTemp.hashCode());
+	}
 	public City createCity(String name, int x, int y, int id){
 		return new City(name, x, y, 0, "black");
 	}

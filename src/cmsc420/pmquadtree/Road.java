@@ -10,8 +10,8 @@ public class Road {
 	protected City end;
 
 	public Road(City start, City end) {
-		this.start = start;
-		this.end = end;
+		this.start = end;
+		this.end = start;
 	}
 	
 	@Override

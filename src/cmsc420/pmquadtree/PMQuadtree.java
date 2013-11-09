@@ -44,14 +44,13 @@ public abstract class PMQuadtree {
 		Node add(Road road, Float origin, int width, int height) {
 			region = new Rectangle2D.Float(origin.x, origin.y, width, height);
 			
-			for(Road r : roads){
-				if(Inclusive2DIntersectionVerifier.intersects(r.getLine(), road.getLine())){
-					if(r.start.equals(road.start) || r.start.equals(road.end) ||
-						r.end.equals(road.start) || r.start.equals(road.end))
-						continue;
-					return this;
-				}
-			}
+//			for(Road r : roads){
+//				if(Inclusive2DIntersectionVerifier.intersects(r.getLine(), road.getLine())){
+//					if(r.start.equals(road.start) || r.start.equals(road.end) || r.end.equals(road.start) || r.start.equals(road.end))
+//						continue;
+//					return this;
+//				}
+//			}
 			
 			addRoad(road);
 			addCity(road.start);
@@ -75,8 +74,8 @@ public abstract class PMQuadtree {
 			return validator.valid(this);
 		}
 
-		private void addRoad(Road road) {
-			roads.add(road);
+		private void addRoad(Road road){
+				roads.add(road);
 		}
 
 		private void addCity(City city) {
@@ -150,8 +149,8 @@ public abstract class PMQuadtree {
                 //canvas.addCross(getCenterX(), getCenterY(), halfWidth, Color.BLACK);
 				int cx = getCenterX();
 				int cy = getCenterY();
-                canvas.addLine(cx - halfWidth, cy, cx + halfWidth, cy, Color.BLACK);
-                canvas.addLine(cx, cy - halfHeight, cx, cy + halfHeight, Color.BLACK);
+                canvas.addLine(cx - halfWidth, cy, cx + halfWidth, cy, Color.GRAY);
+                canvas.addLine(cx, cy - halfHeight, cx, cy + halfHeight, Color.GRAY);
 			}
 		}
 		
@@ -169,6 +168,10 @@ public abstract class PMQuadtree {
 
 		public int getCenterY() {
 			return (int) origin.y + halfHeight;
+		}
+		
+		public Rectangle2D.Float getRegion(int i){
+			return regions[i];
 		}
 
 		@Override
@@ -211,9 +214,9 @@ public abstract class PMQuadtree {
 		this.root = whiteNode;
 	}
 	
-	public PMQuadtree(Validator validator){	
+	public PMQuadtree(Validator validator) {
 		this.roads = new TreeSet<Road>(new RoadComparator());
-		this.spatialOrigin = new Point2D.Float(0,0);
+		this.spatialOrigin = new Point2D.Float(0, 0);
 		this.validator = validator;
 		this.root = whiteNode;
 	}
@@ -221,10 +224,6 @@ public abstract class PMQuadtree {
 	public void setRange(int spatialWidth, int spatialHeight){
 		this.spatialWidth = spatialWidth;
 		this.spatialHeight = spatialHeight;
-	}
-	
-	public void setSpatialBound(){
-		this.spatialBound = new Rectangle2D.Float(0,0,this.spatialWidth, this.spatialHeight);
 	}
 
 	public void clear() {
@@ -245,7 +244,7 @@ public abstract class PMQuadtree {
 		return false;
 	}
 
-	public void add(Road road) {
+	public void add(Road road){
 		roads.add(road);
 		root = root.add(road, spatialOrigin, spatialWidth, spatialHeight);
 	}
@@ -258,5 +257,14 @@ public abstract class PMQuadtree {
 		return roads;
 	}
 	
+	public Rectangle2D.Float getSpatialBound(){
+		return spatialBound;
+	}
+	
+	public void setSpatialBound() {
+		this.spatialBound = new Rectangle2D.Float(spatialOrigin.x, spatialOrigin.y, spatialWidth, spatialHeight);
+	}
+	
+
 
 }
