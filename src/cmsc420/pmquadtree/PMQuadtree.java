@@ -23,6 +23,7 @@ public abstract class PMQuadtree {
 	protected WhiteNode whiteNode = new WhiteNode();
 	protected CanvasPlus canvas;
 	protected Rectangle2D.Float spatialBound;
+	protected TreeSet<Road> roads;
 	
 	public abstract class Node{
 		abstract Node add(Road road, Point2D.Float origin, int width, int height);
@@ -33,6 +34,7 @@ public abstract class PMQuadtree {
 		protected TreeSet<Road> roads;
 		protected int numCities;
 		protected Rectangle2D.Float region;
+		
 		public BlackNode(){
 			this.numCities = 0;
 			this.roads = new TreeSet<Road>(new RoadComparator());
@@ -41,6 +43,15 @@ public abstract class PMQuadtree {
 		@Override
 		Node add(Road road, Float origin, int width, int height) {
 			region = new Rectangle2D.Float(origin.x, origin.y, width, height);
+			
+			for(Road r : roads){
+				if(Inclusive2DIntersectionVerifier.intersects(r.getLine(), road.getLine())){
+					if(r.start.equals(road.start) || r.start.equals(road.end) ||
+						r.end.equals(road.start) || r.start.equals(road.end))
+						continue;
+					return this;
+				}
+			}
 			
 			addRoad(road);
 			addCity(road.start);
@@ -86,6 +97,14 @@ public abstract class PMQuadtree {
 		@Override
 		public String toString(){
 			return roads.toString();
+		}
+		
+		public City getCity(){
+			return city;
+		}
+		
+		public TreeSet<Road> getRoads(){
+			return roads;
 		}
 	}
 	
@@ -166,6 +185,10 @@ public abstract class PMQuadtree {
 			add(road);
 			return this;
 		}
+		
+		public Node[] getChildren(){
+			return children;
+		}
 	}
 	
 	public class WhiteNode extends Node{
@@ -189,6 +212,7 @@ public abstract class PMQuadtree {
 	}
 	
 	public PMQuadtree(Validator validator){	
+		this.roads = new TreeSet<Road>(new RoadComparator());
 		this.spatialOrigin = new Point2D.Float(0,0);
 		this.validator = validator;
 		this.root = whiteNode;
@@ -204,6 +228,7 @@ public abstract class PMQuadtree {
 	}
 
 	public void clear() {
+		this.roads.clear();
 		this.root = whiteNode;
 	}
 
@@ -221,11 +246,17 @@ public abstract class PMQuadtree {
 	}
 
 	public void add(Road road) {
+		roads.add(road);
 		root = root.add(road, spatialOrigin, spatialWidth, spatialHeight);
 	}
-
 	
 	public Node getRoot() {
 		return root;
 	}
+	
+	public TreeSet<Road> getRoads(){
+		return roads;
+	}
+	
+
 }

@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<results>
+  <success>
+    <command id="1" name="createCity"/>
+    <parameters>
+      <name value="A"/>
+      <x value="16"/>
+      <y value="16"/>
+      <radius value="50"/>
+      <color value="red"/>
+    </parameters>
+    <output/>
+  </success>
+  <success>
+    <command id="2" name="createCity"/>
+    <parameters>
+      <name value="B"/>
+      <x value="48"/>
+      <y value="16"/>
+      <radius value="80"/>
+      <color value="orange"/>
+    </parameters>
+    <output/>
+  </success>
+  <success>
+    <command id="3" name="createCity"/>
+    <parameters>
+      <name value="C"/>
+      <x value="48"/>
+      <y value="48"/>
+      <radius value="5"/>
+      <color value="yellow"/>
+    </parameters>
+    <output/>
+  </success>
+  <success>
+    <command id="4" name="createCity"/>
+    <parameters>
+      <name value="D"/>
+      <x value="16"/>
+      <y value="48"/>
+      <radius value="5"/>
+      <color value="yellow"/>
+    </parameters>
+    <output/>
+  </success>
+  <success>
+    <command id="5" name="createCity"/>
+    <parameters>
+      <name value="E"/>
+      <x value="32"/>
+      <y value="32"/>
+      <radius value="5"/>
+      <color value="blue"/>
+    </parameters>
+    <output/>
+  </success>
+  <error type="mapIsEmpty">
+    <command id="6" name="printPMQuadtree"/>
+    <parameters/>
+  </error>
+  <success>
+    <command id="7" name="mapRoad"/>
+    <parameters>
+      <start value="A"/>
+      <end value="B"/>
+    </parameters>
+    <output>
+      <roadCreated end="B" start="A"/>
+    </output>
+  </success>
+  <success>
+    <command id="8" name="mapRoad"/>
+    <parameters>
+      <start value="A"/>
+      <end value="D"/>
+    </parameters>
+    <output>
+      <roadCreated end="D" start="A"/>
+    </output>
+  </success>
+  <success>
+    <command id="9" name="mapRoad"/>
+    <parameters>
+      <start value="D"/>
+      <end value="C"/>
+    </parameters>
+    <output>
+      <roadCreated end="C" start="D"/>
+    </output>
+  </success>
+  <success>
+    <command id="10" name="mapRoad"/>
+    <parameters>
+      <start value="D"/>
+      <end value="E"/>
+    </parameters>
+    <output>
+      <roadCreated end="E" start="D"/>
+    </output>
+  </success>
+  <success>
+    <command id="11" name="mapRoad"/>
+    <parameters>
+      <start value="E"/>
+      <end value="B"/>
+    </parameters>
+    <output>
+      <roadCreated end="B" start="E"/>
+    </output>
+  </success>
+  <success>
+    <command id="12" name="printPMQuadtree"/>
+    <parameters/>
+    <output>
+      <quadtree order="3">
+        <gray x="32" y="32">
+          <gray x="16" y="48">
+            <black cardinality="4">
+              <city color="yellow" name="D" radius="5" x="16" y="48"/>
+              <road end="D" start="A"/>
+              <road end="D" start="C"/>
+              <road end="E" start="D"/>
+            </black>
+            <black cardinality="4">
+              <city color="yellow" name="D" radius="5" x="16" y="48"/>
+              <road end="D" start="A"/>
+              <road end="D" start="C"/>
+              <road end="E" start="D"/>
+            </black>
+            <black cardinality="4">
+              <city color="yellow" name="D" radius="5" x="16" y="48"/>
+              <road end="D" start="A"/>
+              <road end="D" start="C"/>
+              <road end="E" start="D"/>
+            </black>
+            <gray x="24" y="40">
+              <black cardinality="4">
+                <city color="yellow" name="D" radius="5" x="16" y="48"/>
+                <road end="D" start="A"/>
+                <road end="D" start="C"/>
+                <road end="E" start="D"/>
+              </black>
+              <black cardinality="2">
+                <road end="D" start="C"/>
+                <road end="E" start="D"/>
+              </black>
+              <black cardinality="2">
+                <road end="D" start="A"/>
+                <road end="E" start="D"/>
+              </black>
+              <black cardinality="3">
+                <city color="blue" name="E" radius="5" x="32" y="32"/>
+                <road end="E" start="B"/>
+                <road end="E" start="D"/>
+              </black>
+            </gray>
+          </gray>
+          <gray x="48" y="48">
+            <black cardinality="2">
+              <city color="yellow" name="C" radius="5" x="48" y="48"/>
+              <road end="D" start="C"/>
+            </black>
+            <black cardinality="2">
+              <city color="yellow" name="C" radius="5" x="48" y="48"/>
+              <road end="D" start="C"/>
+            </black>
+            <gray x="40" y="40">
+              <black cardinality="1">
+                <road end="D" start="C"/>
+              </black>
+              <black cardinality="2">
+                <city color="yellow" name="C" radius="5" x="48" y="48"/>
+                <road end="D" start="C"/>
+              </black>
+              <black cardinality="3">
+                <city color="blue" name="E" radius="5" x="32" y="32"/>
+                <road end="E" start="B"/>
+                <road end="E" start="D"/>
+              </black>
+              <white/>
+            </gray>
+            <black cardinality="2">
+              <city color="yellow" name="C" radius="5" x="48" y="48"/>
+              <road end="D" start="C"/>
+            </black>
+          </gray>
+          <gray x="16" y="16">
+            <black cardinality="3">
+              <city color="red" name="A" radius="50" x="16" y="16"/>
+              <road end="B" start="A"/>
+              <road end="D" start="A"/>
+            </black>
+            <gray x="24" y="24">
+              <black cardinality="1">
+                <road end="D" start="A"/>
+              </black>
+              <black cardinality="3">
+                <city color="blue" name="E" radius="5" x="32" y="32"/>
+                <road end="E" start="B"/>
+                <road end="E" start="D"/>
+              </black>
+              <black cardinality="3">
+                <city color="red" name="A" radius="50" x="16" y="16"/>
+                <road end="B" start="A"/>
+                <road end="D" start="A"/>
+              </black>
+              <black cardinality="1">
+                <road end="B" start="A"/>
+              </black>
+            </gray>
+            <black cardinality="3">
+              <city color="red" name="A" radius="50" x="16" y="16"/>
+              <road end="B" start="A"/>
+              <road end="D" start="A"/>
+            </black>
+            <black cardinality="3">
+              <city color="red" name="A" radius="50" x="16" y="16"/>
+              <road end="B" start="A"/>
+              <road end="D" start="A"/>
+            </black>
+          </gray>
+          <gray x="48" y="16">
+            <gray x="40" y="24">
+              <black cardinality="3">
+                <city color="blue" name="E" radius="5" x="32" y="32"/>
+                <road end="E" start="B"/>
+                <road end="E" start="D"/>
+              </black>
+              <black cardinality="1">
+                <road end="E" start="B"/>
+              </black>
+              <black cardinality="2">
+                <road end="B" start="A"/>
+                <road end="E" start="B"/>
+              </black>
+              <black cardinality="3">
+                <city color="orange" name="B" radius="80" x="48" y="16"/>
+                <road end="B" start="A"/>
+                <road end="E" start="B"/>
+              </black>
+            </gray>
+            <black cardinality="3">
+              <city color="orange" name="B" radius="80" x="48" y="16"/>
+              <road end="B" start="A"/>
+              <road end="E" start="B"/>
+            </black>
+            <black cardinality="3">
+              <city color="orange" name="B" radius="80" x="48" y="16"/>
+              <road end="B" start="A"/>
+              <road end="E" start="B"/>
+            </black>
+            <black cardinality="3">
+              <city color="orange" name="B" radius="80" x="48" y="16"/>
+              <road end="B" start="A"/>
+              <road end="E" start="B"/>
+            </black>
+          </gray>
+        </gray>
+      </quadtree>
+    </output>
+  </success>
+</results>

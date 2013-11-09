@@ -23,4 +23,12 @@ public class Road {
 		return new Line2D.Float(start.getX(), start.getY(), end.getX(), end.getY());
 	}
 	
+	public City getStart(){
+		return start;
+	}
+	
+	public City getEnd(){
+		return end;
+	}
+	
 }

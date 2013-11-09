@@ -31,6 +31,7 @@ import cmsc420.pmquadtree.PM1Quadtree;
 import cmsc420.pmquadtree.PM3Quadtree;
 import cmsc420.pmquadtree.PMQuadtree;
 import cmsc420.pmquadtree.PMQuadtree.BlackNode;
+import cmsc420.pmquadtree.PMQuadtree.GreyNode;
 import cmsc420.pmquadtree.PMQuadtree.WhiteNode;
 import cmsc420.pmquadtree.Road;
 import cmsc420.pmquadtree.RoadAlreadyMappedException;
@@ -58,8 +59,8 @@ public class Command {
 	protected final TreeMap<String, City> citiesByName = new TreeMap<String, City>();
 	protected final TreeSet<City> citiesByLocation = new TreeSet<City>(new CityLocationComparator());
 	
-	protected final AvlGTree<String, City> citiesByNameAvlG = new AvlGTree<String, City>(String.CASE_INSENSITIVE_ORDER, 1);
-	protected final AvlGTree<City, String> citiesByLocationAvlG = new AvlGTree<City, String>(new CityLocationComparator(), 1);
+	protected AvlGTree<String, City> citiesByNameAvlG;
+	protected AvlGTree<City, String> citiesByLocationAvlG;
 
 	/** stores mapped cities in a spatial data structure */
 	protected final PRQuadtree prQuadtree = new PRQuadtree();
@@ -219,9 +220,16 @@ public class Command {
 	public void processCommands(final Element node) {
 		pmOrder = Integer.parseInt(node.getAttribute("pmOrder"));
 		g = Integer.parseInt(node.getAttribute("g"));
+		citiesByNameAvlG = new AvlGTree<String, City>(String.CASE_INSENSITIVE_ORDER, g);
+		citiesByLocationAvlG = new AvlGTree<City, String>(new CityLocationComparator(), g);
 		spatialWidth = Integer.parseInt(node.getAttribute("spatialWidth"));
 		spatialHeight = Integer.parseInt(node.getAttribute("spatialHeight"));
 
+		if(pmOrder == PM3)
+			pmQuadtree = new PM3Quadtree();
+		else if (pmOrder == PM1)
+			pmQuadtree = new PM1Quadtree();
+		
 		/* initialize canvas */
 		canvas.setFrameSize(spatialWidth, spatialHeight);
 		/* add a rectangle to show where the bounds of the map are located */
@@ -234,10 +242,7 @@ public class Command {
 		pmQuadtree.setRange(spatialWidth, spatialHeight);
 		pmQuadtree.setCanvas(canvas);
 		
-		if(pmOrder == PM3)
-			pmQuadtree = new PM3Quadtree();
-		else if (pmOrder == PM1)
-			pmQuadtree = new PM1Quadtree();
+		
 	}
 
 	/**
@@ -250,8 +255,11 @@ public class Command {
 	 */
 	public void processCreateCity(final Element node) {
 		final Element commandNode = getCommandNode(node);
+		if(node.hasAttribute("id")){
+			commandNode.setAttribute("id", node.getAttribute("id"));
+		}
 		final Element parametersNode = results.createElement("parameters");
-
+		
 		final String name = processStringAttribute(node, "name", parametersNode);
 		final int x = processIntegerAttribute(node, "x", parametersNode);
 		final int y = processIntegerAttribute(node, "y", parametersNode);
@@ -415,21 +423,26 @@ public class Command {
 	 * @param node
 	 *            printPRQuadtree command to be processed
 	 */
-	public void processPrintAvlGtree(final Element node){
+	public void processPrintAvlTree(final Element node){
 		final Element commandNode = getCommandNode(node);
 		final Element parametersNode = results.createElement("parameters");
 		final Element outputNode = results.createElement("output");
-		
+		 
 		if(citiesByName.isEmpty()){
 			addErrorNode("mapIsEmpty", commandNode, parametersNode);
 		} else {
 			final Element avlgNode = results.createElement("AvlGTree");
+			avlgNode.setAttribute("cardinality", String.valueOf(citiesByNameAvlG.size()));
+			avlgNode.setAttribute("height", String.valueOf(citiesByNameAvlG.getHeight()));
+			avlgNode.setAttribute("maxImbalance", String.valueOf(g));
+			printAvlTreeHelper(citiesByNameAvlG.getRoot(), avlgNode);
 			
-			printAvlGtreeHelper();
+			outputNode.appendChild(avlgNode);
+			addSuccessNode(commandNode, parametersNode, outputNode);
 		}
-		
 	}
-	
+
+
 	public void processPrintPRQuadtree(final Element node) {
 		final Element commandNode = getCommandNode(node);
 		final Element parametersNode = results.createElement("parameters");
@@ -466,15 +479,56 @@ public class Command {
 		}
 		
 	}
+	
 
-	private void printPMQuadtreeHelper(final cmsc420.pmquadtree.PMQuadtree.Node currentNode,
-			final Element xmlNode) {
-		if (currentNode instanceof WhiteNode) {
-			Element white = results.createElement("white");
-			xmlNode.appendChild(white);
-		} 
+	public void processMapRoad(Element node) {
+			final Element commandNode = getCommandNode(node);
+			final Element parametersNode = results.createElement("parameters");
+			final Element outputNode = results.createElement("output");
+			
+			final String start = processStringAttribute(node, "start", parametersNode);
+			final String end = processStringAttribute(node, "end", parametersNode);
+			if(node.hasAttribute("id")){
+				commandNode.setAttribute("id", node.getAttribute("id"));
+			}
+			
+			Road road = new Road(citiesByName.get(start), citiesByName.get(end));
+			if(!citiesByName.containsKey(start)){
+				addErrorNode("startPointAlreadyExists", commandNode, parametersNode);
+			} else if(!citiesByName.containsKey(end)){
+				addErrorNode("endPointDoesNotExists", commandNode, parametersNode);
+			} else if(start.equals(end)){
+				addErrorNode("startEqualsEnd", commandNode, parametersNode);
+			} else if(pmQuadtree.getRoads().contains(road)){
+				addErrorNode("roadAlreadyMapped ", commandNode, parametersNode);
+			}
+				 try {
+					 pmQuadtree.add(road); 
+					 Element roadCreated = results.createElement("roadCreated");
+					 roadCreated.setAttribute("end", end);
+					 roadCreated.setAttribute("start", start);
+					 outputNode.appendChild(roadCreated);
+					 addSuccessNode(commandNode, parametersNode, outputNode);
+				 } catch (Exception e){
+					 
+				 } 
+			}
+
+	private void printAvlTreeHelper(cmsc420.sortedmap.Node<String, City> currentNode,
+			Element xmlNode) {
+		if(currentNode == null){
+			Element emptyChild = results.createElement("emptyChild");
+			xmlNode.appendChild(emptyChild);
+		} else {
+			final Element node = results.createElement("node");
+			node.setAttribute("key", currentNode.getKey().toString());
+			node.setAttribute("value", currentNode.getValue().toString());
+			printAvlTreeHelper(currentNode.getLeft(), node);
+			printAvlTreeHelper(currentNode.getRight(), node);
+			xmlNode.appendChild(node);
+		
+		}
 	}
-
 	/**
 	 * Traverses each node of the PR Quadtree.
 	 * 
@@ -512,6 +566,46 @@ public class Command {
 				}
 				xmlNode.appendChild(gray);
 			}
+		}
+	}
+
+
+	private void printPMQuadtreeHelper(final cmsc420.pmquadtree.PMQuadtree.Node currentNode,
+			final Element xmlNode) {
+		if (currentNode instanceof WhiteNode) {
+			Element white = results.createElement("white");
+			xmlNode.appendChild(white);
+		} else if(currentNode instanceof BlackNode){
+			final BlackNode currentBlackNode = (BlackNode) currentNode;
+			final Element black = results.createElement("black");
+			if(currentBlackNode.getCity() != null){
+				Element city = results.createElement("city");
+				City c = currentBlackNode.getCity();
+				city.setAttribute("color", c.getColor());
+				city.setAttribute("name", c.getName());
+				city.setAttribute("radius", String.valueOf(c.getRadius()));
+				city.setAttribute("x", String.valueOf(c.getX()));
+				city.setAttribute("y", String.valueOf(c.getY()));
+				black.appendChild(city);
+			}
+			for(Road r : currentBlackNode.getRoads()){
+				Element road = results.createElement("road");
+				
+				road.setAttribute("end", r.getEnd().getName());
+				road.setAttribute("start", r.getStart().getName());
+				
+				black.appendChild(road);
+			}
+			xmlNode.appendChild(black);
+		} else {
+			final GreyNode currentGreyNode = (GreyNode) currentNode;
+			final Element gray = results.createElement("gray");
+			gray.setAttribute("x", String.valueOf(currentGreyNode.getCenterX()));
+			gray.setAttribute("y", String.valueOf(currentGreyNode.getCenterY()));
+			for (int i = 0; i < 4; i++) {
+				printPMQuadtreeHelper(currentGreyNode.getChildren()[i], gray);
+			}
+			xmlNode.appendChild(gray);
 		}
 	}
 
@@ -716,48 +810,6 @@ public class Command {
 
 	public void processNearestRoad(Element commandNode) {
 		// TODO Auto-generated method stub
-		
-	}
-
-	public void printAvlTree(Element node) {
-		final Element commandNode = getCommandNode(node);
-		final Element parametersNode = results.createElement("parameters");
-		final Element outputNode = results.createElement("output");
-	}
-
-	public void processMapRoad(Element node) {
-		final Element commandNode = getCommandNode(node);
-		final Element parametersNode = results.createElement("parameters");
-		final Element outputNode = results.createElement("output");
-		
-		final String start = processStringAttribute(node, "start", parametersNode);
-		final String end = processStringAttribute(node, "end", parametersNode);
-		final int id = processIntegerAttribute(node, "id", parametersNode);
-		
-		if(!citiesByName.containsKey(start)){
-			addErrorNode("startPointAlreadyExists", commandNode, parametersNode);
-		} else if(!citiesByName.containsKey(end)){
-			addErrorNode("endPointDoesNotExists", commandNode, parametersNode);
-		} else if(start.equals(end)){
-			addErrorNode("startEqualsEnd", commandNode, parametersNode);
-		} else {
-			 Road road = new Road(citiesByName.get(start), citiesByName.get(end));
-			 try {
-				 pmQuadtree.add(road);
-				 
-				 /* Add road to canvas */
-				
-				 addSuccessNode(commandNode, parametersNode, outputNode);
-			 } catch (Exception e){
-				 
-			 } 
-//			 catch (RoadAlreadyMappedException e){
-//				 addErrorNode("roadAlreadyMapped ", commandNode, parametersNode);
-//			 } catch (RoadOutOfBoundsException e){
-//				 addErrorNode("roadOutOfBounds", commandNode, parametersNode);
-//			 }
-		}
-		
 		
 	}
 

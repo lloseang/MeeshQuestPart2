@@ -14,6 +14,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
 
+import cmsc420.canonicalsolution.City;
+
 public class AvlGTree <K, V> implements SortedMap<K, V> {
 	private Node<K,V> root;
 	private Comparator<? super K> comparator;
@@ -47,23 +49,35 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	@Override
 	public boolean containsKey(Object key) {
-		if (key == null)
-			throw new NullPointerException();
-		return containsKey((K)key, root);
+		return getEntry(key) != null;
 	}
 
 	@Override
 	public boolean containsValue(Object value) {
-		if (value == null)
-			throw new NullPointerException();
-		return containsValue((V)value, root);
+		for(Node <K,V> e = getFirstEntry(); e != null; e = successor(e)){
+			if (valEquals(value, e.getValue()))
+				return true;
+		}
+		return false;
 	}
 	
+	private Node<K, V> getFirstEntry() {
+		Node<K, V> p = root;
+		if (p != null)
+			while(p.left != null)
+				p = p.left;
+		return p;
+	}
+
 	@Override
 	public V get(Object key) {
 		if(key == null)
 			throw new NullPointerException();
 		return root == null ? null : get(root, (K) key);
+	}
+	
+	public int getHeight(){
+		return height(root) + 1;
 	}
 	
 	@Override
@@ -142,6 +156,15 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 	}
 	
 	@Override
+	public int hashCode(){
+		int h = 0;
+		Iterator<Entry<K,V>> i = entrySet().iterator();
+		while (i.hasNext())
+			h += i.next().hashCode();
+		return h;
+	}
+	
+	@Override
 	public boolean equals(Object o){
 		if(o == this)
 			return true;
@@ -149,26 +172,28 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		if(!(o instanceof AvlGTree))
 			return false;
 		
-		AvlGTree<K,V> map = (AvlGTree<K,V>) o;
+		Map<K,V> m = (Map<K,V>) o;
 		
-		if(map.size() != this.size())
+		if(m.size() != this.size())
 			return false;
 		
 		try {
-			Iterator<Entry<K, V>> iter = this.entrySet().iterator();
-			while(iter.hasNext()){
-				Entry<K,V> e = iter.next();
+			Iterator<Entry<K, V>> i = this.entrySet().iterator();
+			while(i.hasNext()){
+				Entry<K,V> e = i.next();
 				K key = e.getKey();
 				V value = e.getValue();
 				if(value == null) {
-					if(!(map.get(key) == null) && map.containsKey(key))
+					if(!(m.get(key) == null) && m.containsKey(key))
 						return false;
 				} else {
-					if (!value.equals(map.get(key)))
+					if (!value.equals(m.get(key)))
 						return false;
 				}
 			}
-		} catch (Exception e){
+		} catch (ClassCastException unused){
+			return false;
+		} catch (NullPointerException unused){
 			return false;
 		}
 		
@@ -192,28 +217,9 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 		Set<Map.Entry<K, V>> es = entries;
 		return (es != null) ? es : (entries = new EntrySet());
 	}
-
-	private boolean containsKey(K key, Node<K,V> root) {
-		if(root == null)
-			return false;
-		
-		if(comparator.compare(key, root.getKey()) < 0){
-			return containsKey(key, root.left);
-		}
-		else if (comparator.compare(key, root.getKey()) > 0){
-			return containsKey(key, root.right);
-		}
-		else
-			return true;
-	}
-
-	private boolean containsValue(V value, Node<K,V> root) {
-		if(root == null)
-			return false;
-		if(root.getValue().equals(value))
-			return true;
-		
-		return containsValue(value, root.left) || containsValue(value, root.right);
+	
+	public Node<K,V> getRoot(){
+		return root;
 	}
 
 	private V get(Node<K,V> root, K key){
@@ -852,12 +858,12 @@ public class AvlGTree <K, V> implements SortedMap<K, V> {
 
 	/* Returns the map's entry for the given Key, or null if 
 	 * the map does not contain an entry for the key*/
-	final Node<K,V> getEntry(K key){
+	final Node<K,V> getEntry(Object key){
 		if(key == null)
 			throw new NullPointerException();
 		Node<K,V> p = root;
 		while(p != null) {
-			int cmp = comparator.compare(key, p.getKey());
+			int cmp = comparator.compare((K) key, p.getKey());
 			
 			if(cmp < 0)
 				p = p.left;

@@ -4,6 +4,7 @@ package cmsc420.meeshquest.part2;
 //import java.io.File;
 //import java.io.FileNotFoundException;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -24,6 +25,9 @@ public class MeeshQuest {
 
 	/* input stream/file */
 //	private final InputStream xmlInput = System.in;
+
+	
+	
 	private File xmlInput;
 	private File xmlOutput;
 
@@ -42,14 +46,15 @@ public class MeeshQuest {
 
 	public static void main(String[] args) {
 		final MeeshQuest m = new MeeshQuest();
+
 		m.processInput();
 	}
 
 	public void processInput() {
 		try {
 			// testing purposes
-			xmlInput = new File("part2.public.avl.input.xml");
-//			xmlOutput = new File("output.xml");
+			xmlInput = new File("input.xml");
+			xmlOutput = new File("output.xml");
 
 			/* create output */
 			results = XmlUtility.getDocumentBuilder().newDocument();
@@ -89,13 +94,14 @@ public class MeeshQuest {
                 canvas.dispose();
 			try {
 				/* print results to XML */
-				//XmlUtility.write(results, xmlOutput);
+				XmlUtility.write(results, xmlOutput);
 				XmlUtility.print(results);
 			} catch (TransformerException e) {
 				System.exit(-1);
-			}// catch (FileNotFoundException e) {
-			//	e.printStackTrace();
-			//}
+			} 
+			catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -121,7 +127,7 @@ public class MeeshQuest {
 		} else if (name.equals("listCities")) {
 			command.processListCities(commandNode);
 		} else if (name.equals("printAvlTree")){
-			command.printAvlTree(commandNode);
+			command.processPrintAvlTree(commandNode);
 		} else if (name.equals("mapRoad")){
 			command.processMapRoad(commandNode);
 		} else if (name.equals("printPMQuadtree")){

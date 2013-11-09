@@ -156,6 +156,6 @@ public class City {
 	}
 	
 	public String toString() {
-		return name + "(" + pt.x + ", " + pt.y + ")";
+		return String.format("%s(%d,%d)",name, this.getX(), this.getY());
 	}
 }
