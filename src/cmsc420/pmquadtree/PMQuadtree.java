@@ -8,6 +8,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.TreeSet;
 
 import cmsc420.canonicalsolution.City;
+import cmsc420.canonicalsolution.CityLocationComparator;
 import cmsc420.canonicalsolution.PRQuadtree.Node;
 import cmsc420.drawing.CanvasPlus;
 import cmsc420.geom.Circle2D;
@@ -265,6 +266,39 @@ public abstract class PMQuadtree {
 		this.spatialBound = new Rectangle2D.Float(spatialOrigin.x, spatialOrigin.y, spatialWidth, spatialHeight);
 	}
 	
+	public TreeSet<City> keySet(){
+		TreeSet<City> cities = new TreeSet<City>(new CityLocationComparator());
+		if(root instanceof WhiteNode)
+			return cities;
+		keySet(root, cities);
+		return cities;
+	}
 
-
+	private void keySet(Node node, TreeSet<City> cities) {
+		if(node instanceof BlackNode){
+			BlackNode blackNode = (BlackNode) node;
+			final City city = blackNode.getCity();
+			if(city != null)
+				cities.add(city);
+		}
+		
+		if(node instanceof GreyNode){
+			GreyNode greyNode = (GreyNode) node;
+			for(int i = 0; i < 4; i++){
+				keySet(greyNode.getChildren()[i], cities);
+			}
+		}
+		
+	}
+	
+	public Road getRoad(String start, String end){
+		for(Road r : roads){
+			if((r.start.getName().equals(start) && r.end.getName().equals(end)) ||
+			   (r.end.getName().equals(start) && r.start.getName().equals(end))){
+				return r;
+			}
+		}
+		return null;
+	}
+	
 }

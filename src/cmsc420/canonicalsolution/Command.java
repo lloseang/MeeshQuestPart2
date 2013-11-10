@@ -438,7 +438,7 @@ public class Command {
 		final Element outputNode = results.createElement("output");
 
 		if (citiesByName.isEmpty()) {
-			addErrorNode("mapIsEmpty", commandNode, parametersNode);
+			addErrorNode("emptyTree", commandNode, parametersNode);
 		} else {
 			final Element avlgNode = results.createElement("AvlGTree");
 			avlgNode.setAttribute("cardinality",
@@ -663,6 +663,10 @@ public class Command {
 		final Element parametersNode = results.createElement("parameters");
 		final Element outputNode = results.createElement("output");
 
+		if(node.hasAttribute("id")){
+			commandNode.setAttribute("id", node.getAttribute("id"));
+		}
+		
 		final TreeSet<City> citiesInRange = new TreeSet<City>(
 				new CityNameComparator());
 
@@ -747,56 +751,25 @@ public class Command {
 		final Element commandNode = getCommandNode(node);
 		final Element parametersNode = results.createElement("parameters");
 		final Element outputNode = results.createElement("output");
-
+		
+		if(node.hasAttribute("id")){
+			commandNode.setAttribute("id", node.getAttribute("id"));
+		}
 		/* extract attribute values from command */
 		final int x = processIntegerAttribute(node, "x", parametersNode);
 		final int y = processIntegerAttribute(node, "y", parametersNode);
 
-		final Point2D.Float point = new Point2D.Float(x, y);
-
-		if (citiesByName.size() <= 0) {
-			addErrorNode("mapIsEmpty", commandNode, parametersNode);
+		if (pmQuadtree.isEmpty()) {
+			addErrorNode("cityNotFound", commandNode, parametersNode);
 			return;
 		}
-
-		// final PriorityQueue<NearestCity> nearCities = new
-		// PriorityQueue<NearestCity>(
-		// citiesByName.size());
-
-		if (prQuadtree.getRoot().getType() == Node.EMPTY) {
-			addErrorNode("mapIsEmpty", commandNode, parametersNode);
-		} else {
-
-			//
-			// nearCities.add(new NearestCity(null, Double.POSITIVE_INFINITY));
-			//
-
-			// nearestCityHelper(prQuadtree.getRoot(), point, nearCities);
-			// NearestCity nearestCity = nearCities.remove();
-			City n = nearestCityHelper2(prQuadtree.getRoot(), point);
-			// addCityNode(outputNode, nearestCity.getCity());
-			addCityNode(outputNode, n);
-
-			/* add success node to results */
-			addSuccessNode(commandNode, parametersNode, outputNode);
+		
+		final PriorityQueue<City> cities = new PriorityQueue<City>(citiesByLocation.size(), new CityLocationComparator(new Point2D.Float(x, y)));
+		for(City city : pmQuadtree.keySet()){
+			cities.add(city);
 		}
-	}
-
-	private City nearestCityHelper2(Node root, Point2D.Float point) {
-		PriorityQueue<QuadrantDistance> q = new PriorityQueue<QuadrantDistance>();
-		Node currNode = root;
-		while (currNode.getType() != Node.LEAF) {
-			InternalNode g = (InternalNode) currNode;
-			for (int i = 0; i < 4; i++) {
-				Node kid = g.children[i];
-				if (kid.getType() != Node.EMPTY) {
-					q.add(new QuadrantDistance(kid, point));
-				}
-			}
-			currNode = q.remove().quadtreeNode;
-		}
-
-		return ((LeafNode) currNode).getCity();
+		addCityNode(outputNode, cities.remove());
+		addSuccessNode(commandNode, parametersNode, outputNode);
 	}
 
 	class QuadrantDistance implements Comparable<QuadrantDistance> {
@@ -847,14 +820,72 @@ public class Command {
 		}
 	}
 
-	public void processNearestRoad(Element commandNode) {
-		// TODO Auto-generated method stub
+	public void processNearestRoad(Element node) {
+		final Element commandNode = getCommandNode(node);
+		final Element parametersNode = results.createElement("parameters");
+		final Element outputNode = results.createElement("output");
+		
+		/* extract attribute values from command */
+		final int x = processIntegerAttribute(node, "x", parametersNode);
+		final int y = processIntegerAttribute(node, "y", parametersNode);
 
+		if (pmQuadtree.getRoads().isEmpty()) {
+			addErrorNode("roadNotFound", commandNode, parametersNode);
+			return;
+		}
+		
+		final PriorityQueue<Road> roads = new PriorityQueue<Road>(citiesByLocation.size(), new RoadComparator(new Point2D.Float(x, y)));
+		for(Road road : pmQuadtree.getRoads()){
+			roads.add(road);
+		}
+		addRoadNode(outputNode, roads.remove());
+		addSuccessNode(commandNode, parametersNode, outputNode);
 	}
 
-	public void processNearestCityToRoad(Element commandNode) {
-		// TODO Auto-generated method stub
+	public void processNearestCityToRoad(final Element node) {
+		final Element commandNode = getCommandNode(node);
+		final Element parametersNode = results.createElement("parameters");
+		final Element outputNode = results.createElement("output");
+		
+		final String start = processStringAttribute(node, "start", parametersNode);
+		final String end = processStringAttribute(node, "end", parametersNode);
+		Road road = pmQuadtree.getRoad(start, end);
+		if(road == null){
+			addErrorNode("roadIsNotMapped", commandNode,parametersNode);
+		} else if (pmQuadtree.getRoads().size() == 1){
+			addErrorNode("noOtherCitiesMapped", commandNode,parametersNode);
+		} else {
+			City c = nearestCityToRoadHelper(road.getLine(), pmQuadtree.keySet());
+			Element city = results.createElement("city");
+			city.setAttribute("name", c.name);
+			city.setAttribute("radius", String.valueOf(c.getRadius()));
+			city.setAttribute("x", String.valueOf(c.getX()));
+			city.setAttribute("y", String.valueOf(c.getY()));
+			city.setAttribute("color", c.getColor());
+			outputNode.appendChild(city);
+			addSuccessNode(commandNode, parametersNode, outputNode);
+		}
+	}
 
+
+	private City nearestCityToRoadHelper(java.awt.geom.Line2D.Float line,
+			TreeSet<City> cities) {
+		City min = null;
+		double currentMin = java.lang.Double.POSITIVE_INFINITY;
+		for(City city : cities){
+			if(currentMin == java.lang.Double.POSITIVE_INFINITY){
+				currentMin = line.ptLineDistSq(city.toPoint2D());
+				min = city;
+				continue;
+			}
+			
+			if(line.ptLineDist(city.toPoint2D()) < currentMin){
+				currentMin = line.ptLineDist(city.toPoint2D());
+				min = city;
+			}
+		}
+		return min;
+		
 	}
 
 	public void processShortestPath(Element commandNode) {
@@ -872,10 +903,9 @@ public class Command {
 		/* extract values from command */
 		final int x = processIntegerAttribute(node, "x", parametersNode);
 		final int y = processIntegerAttribute(node, "y", parametersNode);
-		final int radius = processIntegerAttribute(node, "radius",
-				parametersNode);
+		final int radius = processIntegerAttribute(node, "radius",parametersNode);
 
-		String pathFile = "";
+		String pathFile = node.getAttribute("saveMap");
 		if (node.getAttribute("saveMap").compareTo("") != 0) {
 			pathFile = processStringAttribute(node, "saveMap", parametersNode);
 		}
@@ -889,7 +919,7 @@ public class Command {
 
 			/* print out cities within range */
 			if (roads.isEmpty()) {
-				addErrorNode("noCitiesExistInRange", commandNode,
+				addErrorNode("noRoadsExistInRange", commandNode,
 						parametersNode);
 			} else {
 				/* get city list */
@@ -927,7 +957,7 @@ public class Command {
 	private void rangeRoadsHelper(Point2D.Double point, int radius,
 			cmsc420.pmquadtree.PMQuadtree.Node root, TreeSet<Road> roads) {
 		for(Road road : pmQuadtree.getRoads()){
-			if(road.getLine().ptSegDist(point) < radius){
+			if(road.getLine().ptSegDist(point) <= radius){
 				roads.add(road);
 			}
 		}
