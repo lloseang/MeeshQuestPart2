@@ -90,8 +90,8 @@ public class MeeshQuest {
 			addFatalError();
 		} finally {
 			/* dispose canvas */
-			if (canvas != null)
-                canvas.dispose();
+//			if (canvas != null)
+//                canvas.dispose();
 			try {
 				/* print results to XML */
 				XmlUtility.write(results, xmlOutput);

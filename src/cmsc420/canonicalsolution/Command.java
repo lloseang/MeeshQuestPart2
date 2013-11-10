@@ -8,6 +8,7 @@
 package cmsc420.canonicalsolution;
 
 import java.awt.Color;
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Point2D.Double;
 import java.awt.geom.Rectangle2D;
@@ -21,8 +22,6 @@ import java.util.TreeSet;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import cmsc420.canonicalsolution.PRQuadtree.CityAlreadyMappedException;
-import cmsc420.canonicalsolution.PRQuadtree.CityOutOfBoundsException;
 import cmsc420.canonicalsolution.PRQuadtree.InternalNode;
 import cmsc420.canonicalsolution.PRQuadtree.LeafNode;
 import cmsc420.canonicalsolution.PRQuadtree.Node;
@@ -855,7 +854,7 @@ public class Command {
 		} else if (pmQuadtree.getRoads().size() == 1){
 			addErrorNode("noOtherCitiesMapped", commandNode,parametersNode);
 		} else {
-			City c = nearestCityToRoadHelper(road.getLine(), pmQuadtree.keySet());
+			City c = nearestCityToRoadHelper(road, pmQuadtree.keySet());
 			Element city = results.createElement("city");
 			city.setAttribute("name", c.name);
 			city.setAttribute("radius", String.valueOf(c.getRadius()));
@@ -868,11 +867,15 @@ public class Command {
 	}
 
 
-	private City nearestCityToRoadHelper(java.awt.geom.Line2D.Float line,
-			TreeSet<City> cities) {
+	private City nearestCityToRoadHelper(Road road, TreeSet<City> cities) {
+		Line2D.Float line = road.getLine();
 		City min = null;
+		
 		double currentMin = java.lang.Double.POSITIVE_INFINITY;
 		for(City city : cities){
+			if(road.getStart().equals(city) || road.getEnd().equals(city)){
+				continue;
+			}
 			if(currentMin == java.lang.Double.POSITIVE_INFINITY){
 				currentMin = line.ptLineDistSq(city.toPoint2D());
 				min = city;

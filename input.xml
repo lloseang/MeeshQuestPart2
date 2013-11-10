@@ -1,33 +1,41 @@
-<commands
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="part2in.xsd"
-    spatialWidth="128"
-    spatialHeight="128"
-    g="1"
-    pmOrder="3">
- <createCity name="A1" x="1" y="50" radius="10" color="black"/>
- <createCity name="A2" x="100" y="50" radius="10" color="black"/>
- <createCity name="A3" x="50" y="50" radius="10" color="black"/>
- <createCity name="A4" x="1" y="100" radius="10" color="black"/>
- <createCity name="A5" x="50" y="100" radius="10" color="black"/>
- <createCity name="A6" x="100" y="100" radius="10" color="black"/>
- <createCity name="A7" x="105" y="105" radius="10" color="black"/>
- 
- <mapRoad start="A1" end="A2"/>
- <mapRoad start="A1" end="A4"/>
- <mapRoad start="A1" end="A5"/>
- <mapRoad start="A1" end="A6"/>
- 
- <rangeCities x="50" y="50" radius="20" saveMap="part2.public.range.1"/>
- 
- <mapRoad start="A2" end="A6"/>
- <mapRoad start="A4" end="A5"/>
- <mapRoad start="A5" end="A6"/>
- 
- <rangeRoads x="100" y="100" radius="15" saveMap="part2.public.range.2"/>
- 
- <mapRoad start="A6" end="A7"/>
- 
- <rangeCities x="100" y="100" radius="10" saveMap="part2.public.range.3"/>
- <rangeRoads x="1" y="50" radius="5" saveMap="part2.public.range.4"/>
+
+<commands xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="part2in.xsd" spatialWidth="128" spatialHeight="128" g="1" pmOrder="3">
+<createCity name="A" radius="5" x="32" y="32" color="yellow" id="1"/>
+<createCity name="B" radius="5" x="96" y="32" color="yellow" id="2"/>
+<createCity name="C" radius="5" x="64" y="64" color="yellow" id="3"/>
+<createCity name="D" radius="5" x="96" y="64" color="yellow" id="4"/>
+<createCity name="E" radius="5" x="32" y="96" color="yellow" id="5"/>
+<createCity name="F" radius="5" x="96" y="96" color="yellow" id="6"/>
+<createCity name="G" radius="5" x="64" y="128" color="yellow" id="7"/>
+<createCity name="H" radius="10" x="48" y="80" color="yellow" id="8"/>
+<createCity name="I" radius="10" x="80" y="80" color="yellow" id="8"/>
+
+<mapRoad start="A" end="B"/>
+<mapRoad start="A" end="C"/>
+<mapRoad start="A" end="E"/>
+<mapRoad start="A" end="F"/>
+<mapRoad start="A" end="G"/>
+<mapRoad start="B" end="G"/>
+<mapRoad start="D" end="B"/>
+<mapRoad start="D" end="F"/>
+<mapRoad start="E" end="G"/>
+<mapRoad start="E" end="H"/>
+<mapRoad start="F" end="G"/>
+<mapRoad start="E" end="B"/>
+<mapRoad start="H" end="B"/>
+<mapRoad start="H" end="G"/>
+<mapRoad start="I" end="D"/>
+<mapRoad start="I" end="G"/>
+<mapRoad start="I" end="H"/>
+
+<nearestRoad x="64" y="80"/>
+<nearestRoad x="64" y="64"/>
+<nearestRoad x="0" y="0"/>
+<nearestRoad x="64" y="128"/>
+<nearestRoad x="64" y="0"/>
+<nearestRoad x="80" y="64"/>
+<nearestRoad x="64" y="112"/>
+
+<printPMQuadtree/>
+<saveMap name="owaNCTR"/>
 </commands>
