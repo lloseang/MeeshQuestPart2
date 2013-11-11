@@ -42,8 +42,8 @@ public class CityLocationComparator implements Comparator<City> {
 				}
 			}
 		} else {
-			distanceToOne = point.distanceSq(one.toPoint2D());
-			distanceToTwo = point.distanceSq(two.toPoint2D());
+			distanceToOne = point.distance(one.toPoint2D());
+			distanceToTwo = point.distance(two.toPoint2D());
 			if(distanceToOne > distanceToTwo){
 				return 1;
 			} else if (distanceToOne < distanceToTwo){

@@ -31,7 +31,7 @@ public class Node<K,V> implements java.util.Map.Entry<K, V> {
 	
 	@Override
 	public String toString(){
-		return String.format("Node<%s, %s>", this.key, this.value);
+		return String.format("%s=%s", this.key, this.value);
 	}
 	
 	@Override

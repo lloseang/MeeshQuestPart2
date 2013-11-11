@@ -824,6 +824,10 @@ public class Command {
 		final Element parametersNode = results.createElement("parameters");
 		final Element outputNode = results.createElement("output");
 		
+		if (node.hasAttribute("id")) {
+			commandNode.setAttribute("id", node.getAttribute("id"));
+		}
+		
 		/* extract attribute values from command */
 		final int x = processIntegerAttribute(node, "x", parametersNode);
 		final int y = processIntegerAttribute(node, "y", parametersNode);
@@ -845,6 +849,10 @@ public class Command {
 		final Element commandNode = getCommandNode(node);
 		final Element parametersNode = results.createElement("parameters");
 		final Element outputNode = results.createElement("output");
+		
+		if (node.hasAttribute("id")) {
+			commandNode.setAttribute("id", node.getAttribute("id"));
+		}
 		
 		final String start = processStringAttribute(node, "start", parametersNode);
 		final String end = processStringAttribute(node, "end", parametersNode);
@@ -868,7 +876,7 @@ public class Command {
 
 
 	private City nearestCityToRoadHelper(Road road, TreeSet<City> cities) {
-		Line2D.Float line = road.getLine();
+		Line2D line = road.getLine();
 		City min = null;
 		
 		double currentMin = java.lang.Double.POSITIVE_INFINITY;
@@ -877,14 +885,26 @@ public class Command {
 				continue;
 			}
 			if(currentMin == java.lang.Double.POSITIVE_INFINITY){
-				currentMin = line.ptLineDistSq(city.toPoint2D());
+				currentMin = line.ptSegDist(city.toPoint2D());
 				min = city;
 				continue;
 			}
-			
-			if(line.ptLineDist(city.toPoint2D()) < currentMin){
-				currentMin = line.ptLineDist(city.toPoint2D());
+			if(line.ptSegDist(city.toPoint2D()) > currentMin){
+				continue;
+			} else if(line.ptSegDist(city.toPoint2D()) < currentMin){
+				if(min == null){
+					currentMin = line.ptSegDist(city.toPoint2D());
+					min = city;
+					continue;
+				}
+				currentMin = line.ptSegDist(city.toPoint2D());
 				min = city;
+			} else {
+				if(min.getName().compareTo(city.getName()) > 0){
+					currentMin = line.ptSegDist(city.toPoint2D());
+					min = city;
+				}	
+				
 			}
 		}
 		return min;
@@ -901,6 +921,10 @@ public class Command {
 		final Element parametersNode = results.createElement("parameters");
 		final Element outputNode = results.createElement("output");
 
+		if (node.hasAttribute("id")) {
+			commandNode.setAttribute("id", node.getAttribute("id"));
+		}
+		
 		final TreeSet<Road> roads = new TreeSet<Road>(new RoadComparator());
 
 		/* extract values from command */
@@ -932,6 +956,7 @@ public class Command {
 					addRoadNode(roadListNode, road);
 				}
 				outputNode.appendChild(roadListNode);
+				roads.clear();
 
 				/* add success node to results */
 				addSuccessNode(commandNode, parametersNode, outputNode);
@@ -952,8 +977,8 @@ public class Command {
 
 	private void addRoadNode(Element node, String roadNodeName, Road road) {
 		final Element roadNode = results.createElement(roadNodeName);
-		roadNode.setAttribute("end", road.getEnd().getName());
 		roadNode.setAttribute("start", road.getStart().getName());
+		roadNode.setAttribute("end", road.getEnd().getName());
 		node.appendChild(roadNode);
 	}
 

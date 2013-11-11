@@ -24,12 +24,10 @@ import cmsc420.xml.XmlUtility;
 public class MeeshQuest {
 
 	/* input stream/file */
-//	private final InputStream xmlInput = System.in;
-
+	private final InputStream xmlInput = System.in;
 	
-	
-	private File xmlInput;
-	private File xmlOutput;
+//	private File xmlInput;
+//	private File xmlOutput;
 
 	/* output DOM Document tree */
 	private Document results;
@@ -53,8 +51,8 @@ public class MeeshQuest {
 	public void processInput() {
 		try {
 			// testing purposes
-			xmlInput = new File("input.xml");
-			xmlOutput = new File("output.xml");
+//			xmlInput = new File("input.xml");
+//			xmlOutput = new File("output.xml");
 
 			/* create output */
 			results = XmlUtility.getDocumentBuilder().newDocument();
@@ -90,18 +88,18 @@ public class MeeshQuest {
 			addFatalError();
 		} finally {
 			/* dispose canvas */
-//			if (canvas != null)
-//                canvas.dispose();
+			if (canvas != null)
+                canvas.dispose();
 			try {
 				/* print results to XML */
-				XmlUtility.write(results, xmlOutput);
+//				XmlUtility.write(results, xmlOutput);
 				XmlUtility.print(results);
 			} catch (TransformerException e) {
 				System.exit(-1);
 			} 
-			catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
+//			catch (FileNotFoundException e) {
+//				e.printStackTrace();
+//			}
 		}
 	}
 

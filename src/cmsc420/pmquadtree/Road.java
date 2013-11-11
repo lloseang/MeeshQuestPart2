@@ -19,8 +19,8 @@ public class Road {
 		return String.format("%s - %s", start.toString(), end.toString());
 	}
 	
-	public Line2D.Float getLine(){
-		return new Line2D.Float(start.getX(), start.getY(), end.getX(), end.getY());
+	public Line2D getLine(){
+		return new Line2D.Float(start.toPoint2D(), end.toPoint2D());
 	}
 	
 	public City getStart(){

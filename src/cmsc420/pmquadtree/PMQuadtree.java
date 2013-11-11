@@ -45,14 +45,6 @@ public abstract class PMQuadtree {
 		Node add(Road road, Float origin, int width, int height) {
 			region = new Rectangle2D.Float(origin.x, origin.y, width, height);
 			
-//			for(Road r : roads){
-//				if(Inclusive2DIntersectionVerifier.intersects(r.getLine(), road.getLine())){
-//					if(r.start.equals(road.start) || r.start.equals(road.end) || r.end.equals(road.start) || r.start.equals(road.end))
-//						continue;
-//					return this;
-//				}
-//			}
-			
 			addRoad(road);
 			addCity(road.start);
 			addCity(road.end);
@@ -80,8 +72,7 @@ public abstract class PMQuadtree {
 		}
 
 		private void addCity(City city) {
-			if(Inclusive2DIntersectionVerifier.intersects(city.toPoint2D(), region) &&
-					city.toPoint2D().getX() < spatialWidth && city.toPoint2D().getY() < spatialHeight){
+			if(Inclusive2DIntersectionVerifier.intersects(city.toPoint2D(), region)){
 				if(this.city == null){
 					this.city = city;
 					numCities++;
